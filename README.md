@@ -9,11 +9,25 @@
 - ✏️ Повне редагування (додавання, зміна, видалення)
 - 💾 Автоматичне збереження в SQLite базі даних
 - 📱 Адаптивний дизайн
-- 🌐 Можливість публічного доступу через ngrok
+- 🌐 Онлайн хостинг на Render.com
 
 ## 🚀 Швидкий старт
 
-### Windows
+### 🌐 Онлайн версія (рекомендовано)
+
+Сайт доступний онлайн без встановлення:
+
+**https://ваш-сайт.onrender.com**
+
+Просто відкрийте посилання в браузері!
+
+[📖 Інструкція з деплою на Render.com](RENDER_DEPLOY.md)
+
+---
+
+### 💻 Локальна версія
+
+#### Windows
 
 1. Встановіть [Python 3.8+](https://www.python.org/downloads/) (поставте галочку "Add Python to PATH")
 2. Завантажте проєкт (зелена кнопка "Code" → "Download ZIP")
@@ -21,11 +35,11 @@
 4. Подвійний клік на `start_charity_windows.bat`
 5. Відкрийте браузер: http://localhost:5001
 
-### Linux
+#### Linux
 
 ```bash
 # Встановлення залежностей
-pip install flask flask-cors
+pip install -r requirements.txt
 
 # Локальний запуск
 ./start_charity.sh
