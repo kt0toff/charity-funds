@@ -522,16 +522,29 @@
 
         async function loadData() {
             try {
-                const [resourcesResponse, fundsResponse] = await Promise.all([
-                    fetch('/content/resources.json'),
-                    fetch('/content/funds.json')
-                ]);
+                // Спробувати завантажити з localStorage
+                const savedResources = localStorage.getItem('charity_resources');
+                const savedFunds = localStorage.getItem('charity_funds');
 
-                const resourcesData = await resourcesResponse.json();
-                const fundsData = await fundsResponse.json();
+                if (savedResources && savedFunds) {
+                    allResources = JSON.parse(savedResources);
+                    allFunds = JSON.parse(savedFunds);
+                } else {
+                    // Якщо немає в localStorage, завантажити з JSON файлів
+                    const [resourcesResponse, fundsResponse] = await Promise.all([
+                        fetch('/content/resources.json'),
+                        fetch('/content/funds.json')
+                    ]);
 
-                allResources = resourcesData.resources || [];
-                allFunds = fundsData.funds || [];
+                    const resourcesData = await resourcesResponse.json();
+                    const fundsData = await fundsResponse.json();
+
+                    allResources = resourcesData.resources || [];
+                    allFunds = fundsData.funds || [];
+
+                    // Зберегти в localStorage
+                    saveToLocalStorage();
+                }
 
                 loadCustomOrder();
                 renderResources();
@@ -539,6 +552,11 @@
                 console.error('Error loading data:', error);
                 document.getElementById('resourcesList').innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Помилка завантаження</p>';
             }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('charity_resources', JSON.stringify(allResources));
+            localStorage.setItem('charity_funds', JSON.stringify(allFunds));
         }
 
         function applySorting() {
@@ -754,12 +772,45 @@
 
         document.getElementById('resourceForm').onsubmit = function(e) {
             e.preventDefault();
-            alert('Для збереження змін використовуйте адмін-панель: /admin/');
+            const name = document.getElementById('resourceName').value;
+            const description = document.getElementById('resourceDescription').value;
+            const icon = document.getElementById('resourceIcon').value || '📦';
+
+            if (editingResourceId) {
+                const resource = allResources.find(r => r.id === editingResourceId);
+                resource.name = name;
+                resource.description = description;
+                resource.icon = icon;
+            } else {
+                const id = name.toLowerCase().replace(/\s+/g, '_').replace(/[^\wа-яА-ЯіІїЇєЄ]/g, '');
+                allResources.push({ id, name, description, icon, order: allResources.length });
+            }
+
+            saveToLocalStorage();
+            renderResources();
             closeResourceModal();
         };
 
         function deleteResource(resourceId) {
-            alert('Для видалення використовуйте адмін-панель: /admin/');
+            if (confirm('Ви впевнені, що хочете видалити цей ресурс? Всі фонди цього ресурсу також будуть видалені.')) {
+                allResources = allResources.filter(r => r.id !== resourceId);
+                allFunds = allFunds.filter(f => f.resource_id !== resourceId);
+
+                if (currentResourceId === resourceId) {
+                    currentResourceId = null;
+                    document.getElementById('contentTitle').textContent = 'Оберіть ресурс';
+                    document.getElementById('addFundBtn').style.display = 'none';
+                    document.getElementById('fundsGrid').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">👈</div>
+                            <div class="empty-state-text">Оберіть ресурс зі списку</div>
+                        </div>
+                    `;
+                }
+
+                saveToLocalStorage();
+                renderResources();
+            }
         }
 
         // Модальні вікна для фондів
@@ -793,12 +844,55 @@
 
         document.getElementById('fundForm').onsubmit = function(e) {
             e.preventDefault();
-            alert('Для збереження змін використовуйте адмін-панель: /admin/');
+            const name = document.getElementById('fundName').value;
+            const contact = document.getElementById('fundContact').value;
+            const conditions = document.getElementById('fundConditions').value;
+
+            if (editingFundId !== null) {
+                const funds = allFunds.filter(f => f.resource_id === currentResourceId);
+                const fund = funds[editingFundId];
+                fund.name = name;
+                fund.contact = contact;
+                fund.conditions = conditions;
+            } else {
+                allFunds.push({
+                    resource_id: currentResourceId,
+                    name,
+                    contact,
+                    conditions
+                });
+            }
+
+            saveToLocalStorage();
+            renderFunds();
             closeFundModal();
         };
 
         function deleteFund(fundIndex) {
-            alert('Для видалення використовуйте адмін-панель: /admin/');
+            if (confirm('Ви впевнені, що хочете видалити цей фонд?')) {
+                const funds = allFunds.filter(f => f.resource_id === currentResourceId);
+                const fund = funds[fundIndex];
+                const globalIndex = allFunds.indexOf(fund);
+                allFunds.splice(globalIndex, 1);
+
+                saveToLocalStorage();
+                renderFunds();
+            }
+        }
+
+        function exportData() {
+            const data = {
+                resources: allResources,
+                funds: allFunds
+            };
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `charity_backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
         }
 
         window.onclick = function(event) {
