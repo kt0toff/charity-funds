@@ -450,6 +450,8 @@
                 <h2 class="content-title" id="contentTitle">Оберіть ресурс</h2>
                 <div class="header-actions">
                     <button class="btn btn-success" id="addFundBtn" onclick="openAddFundModal()" style="display: none;">➕ Додати фонд</button>
+                    <button class="btn" onclick="importData()">📥 Імпорт</button>
+                    <button class="btn" onclick="exportData()">💾 Експорт</button>
                 </div>
             </div>
             <div class="funds-grid" id="fundsGrid">
@@ -522,33 +524,28 @@
 
         async function loadData() {
             try {
-                // Завантажити з Netlify Blobs
-                const [resourcesResponse, fundsResponse] = await Promise.all([
-                    fetch('/.netlify/functions/github-api/resources'),
-                    fetch('/.netlify/functions/github-api/funds')
-                ]);
+                // Спробувати завантажити з localStorage
+                const savedResources = localStorage.getItem('charity_resources');
+                const savedFunds = localStorage.getItem('charity_funds');
 
-                if (resourcesResponse.ok && fundsResponse.ok) {
+                if (savedResources && savedFunds) {
+                    allResources = JSON.parse(savedResources);
+                    allFunds = JSON.parse(savedFunds);
+                } else {
+                    // Якщо немає в localStorage, завантажити з JSON файлів
+                    const [resourcesResponse, fundsResponse] = await Promise.all([
+                        fetch('/content/resources.json'),
+                        fetch('/content/funds.json')
+                    ]);
+
                     const resourcesData = await resourcesResponse.json();
                     const fundsData = await fundsResponse.json();
 
                     allResources = resourcesData.resources || [];
                     allFunds = fundsData.funds || [];
-                } else {
-                    // Якщо даних немає, завантажити з JSON файлів (перший раз)
-                    const [resourcesFileResponse, fundsFileResponse] = await Promise.all([
-                        fetch('/content/resources.json'),
-                        fetch('/content/funds.json')
-                    ]);
 
-                    const resourcesData = await resourcesFileResponse.json();
-                    const fundsData = await fundsFileResponse.json();
-
-                    allResources = resourcesData.resources || [];
-                    allFunds = fundsData.funds || [];
-
-                    // Зберегти в Netlify Blobs
-                    await saveToLocalStorage();
+                    // Зберегти в localStorage
+                    saveToLocalStorage();
                 }
 
                 loadCustomOrder();
@@ -560,30 +557,9 @@
         }
 
         async function saveToLocalStorage() {
-            try {
-                // Зберегти resources
-                await fetch('/.netlify/functions/github-api/resources', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        content: JSON.stringify({ resources: allResources }, null, 2)
-                    })
-                });
-
-                // Зберегти funds
-                await fetch('/.netlify/functions/github-api/funds', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        content: JSON.stringify({ funds: allFunds }, null, 2)
-                    })
-                });
-
-                console.log('Дані збережено в Netlify Blobs');
-            } catch (error) {
-                console.error('Error saving data:', error);
-                alert('Помилка збереження даних. Спробуйте ще раз.');
-            }
+            localStorage.setItem('charity_resources', JSON.stringify(allResources));
+            localStorage.setItem('charity_funds', JSON.stringify(allFunds));
+            console.log('Дані збережено в localStorage');
         }
 
         function applySorting() {
@@ -920,6 +896,51 @@
             link.download = `charity_backup_${new Date().toISOString().split('T')[0]}.json`;
             link.click();
             URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const data = JSON.parse(event.target.result);
+
+                        if (data.resources && data.funds) {
+                            if (confirm('Це замінить всі поточні дані. Продовжити?')) {
+                                allResources = data.resources;
+                                allFunds = data.funds;
+                                saveToLocalStorage();
+                                renderResources();
+
+                                // Скинути вибраний ресурс
+                                currentResourceId = null;
+                                document.getElementById('contentTitle').textContent = 'Оберіть ресурс';
+                                document.getElementById('addFundBtn').style.display = 'none';
+                                document.getElementById('fundsGrid').innerHTML = `
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">👈</div>
+                                        <div class="empty-state-text">Оберіть ресурс зі списку</div>
+                                    </div>
+                                `;
+
+                                alert('Дані успішно імпортовано!');
+                            }
+                        } else {
+                            alert('Невірний формат файлу. Потрібен JSON з полями resources та funds.');
+                        }
+                    } catch (error) {
+                        alert('Помилка читання файлу: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
         }
 
         window.onclick = function(event) {
