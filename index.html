@@ -106,7 +106,7 @@
             padding: 15px;
             margin-bottom: 10px;
             border-radius: 10px;
-            cursor: pointer;
+            cursor: move;
             transition: all 0.3s ease;
             border: 2px solid transparent;
             display: flex;
@@ -115,6 +115,15 @@
             position: relative;
             white-space: normal;
             word-wrap: break-word;
+        }
+
+        .resource-item.dragging {
+            opacity: 0.5;
+        }
+
+        .resource-item.drag-over {
+            border-color: #667eea;
+            background: #e9ecef;
         }
 
         .resource-item:hover {
@@ -149,6 +158,25 @@
             word-wrap: break-word;
             overflow-wrap: break-word;
             line-height: 1.4;
+        }
+
+        .resource-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+            transition: transform 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            transform: scale(1.2);
         }
 
         .admin-link-sidebar {
@@ -186,6 +214,31 @@
         .content-title {
             font-size: 2em;
             color: #667eea;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         }
 
         .funds-grid {
@@ -227,15 +280,9 @@
             flex: 1;
         }
 
-        .fund-category {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.8em;
-            font-weight: 600;
-            margin-bottom: 10px;
+        .fund-actions {
+            display: flex;
+            gap: 5px;
         }
 
         .fund-contact {
@@ -245,18 +292,10 @@
             padding: 10px;
             background: #f8f9fa;
             border-radius: 8px;
+            white-space: pre-line;
         }
 
-        .fund-contact a {
-            color: #667eea;
-            text-decoration: none;
-        }
-
-        .fund-contact a:hover {
-            text-decoration: underline;
-        }
-
-        .fund-description {
+        .fund-conditions {
             color: #333;
             line-height: 1.6;
             font-size: 0.95em;
@@ -276,6 +315,104 @@
         .empty-state-text {
             font-size: 1.3em;
             margin-bottom: 10px;
+        }
+
+        /* Модальні вікна */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            font-size: 1.8em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
         }
 
         @media (max-width: 768px) {
@@ -310,16 +447,14 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <h1>🤝 Ресурси</h1>
+                <button class="add-resource-btn" onclick="openAddResourceModal()">➕ Додати ресурс</button>
             </div>
             <div class="filter-section">
-                <div class="filter-label">Категорія:</div>
-                <select class="filter-select" id="categoryFilter">
-                    <option value="">Всі категорії</option>
-                    <option value="Діти">Діти</option>
-                    <option value="Медицина">Медицина</option>
-                    <option value="Тварини">Тварини</option>
-                    <option value="Освіта">Освіта</option>
-                    <option value="Інше">Інше</option>
+                <div class="filter-label">Сортування:</div>
+                <select class="filter-select" id="sortSelect" onchange="applySorting()">
+                    <option value="custom">Своє налаштування</option>
+                    <option value="az">А → Я</option>
+                    <option value="za">Я → А</option>
                 </select>
             </div>
             <div class="resources-list" id="resourcesList"></div>
@@ -329,113 +464,365 @@
         <!-- Права панель - сітка фондів -->
         <div class="main-content">
             <div class="content-header">
-                <h2 class="content-title" id="contentTitle">Оберіть категорію</h2>
+                <h2 class="content-title" id="contentTitle">Оберіть ресурс</h2>
+                <div class="header-actions">
+                    <button class="btn btn-success" id="addFundBtn" onclick="openAddFundModal()" style="display: none;">➕ Додати фонд</button>
+                </div>
             </div>
             <div class="funds-grid" id="fundsGrid">
                 <div class="empty-state">
                     <div class="empty-state-icon">👈</div>
-                    <div class="empty-state-text">Оберіть категорію зі списку</div>
-                    <p>Натисніть на категорію ліворуч, щоб побачити фонди</p>
+                    <div class="empty-state-text">Оберіть ресурс зі списку</div>
+                    <p>Натисніть на ресурс ліворуч, щоб побачити фонди</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Модальне вікно для ресурсу -->
+    <div id="resourceModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-header" id="resourceModalTitle">Додати ресурс</h2>
+            <form id="resourceForm">
+                <div class="form-group">
+                    <label>Назва ресурсу:</label>
+                    <input type="text" id="resourceName" required placeholder="Наприклад: Продукти харчування">
+                </div>
+                <div class="form-group">
+                    <label>Опис:</label>
+                    <input type="text" id="resourceDescription" required placeholder="Наприклад: Продуктові набори, гарячі обіди">
+                </div>
+                <div class="form-group">
+                    <label>Іконка (emoji):</label>
+                    <input type="text" id="resourceIcon" maxlength="2" placeholder="🍲">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-success">Зберегти</button>
+                    <button type="button" class="btn btn-cancel" onclick="closeResourceModal()">Скасувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальне вікно для фонду -->
+    <div id="fundModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-header" id="fundModalTitle">Додати фонд</h2>
+            <form id="fundForm">
+                <div class="form-group">
+                    <label>Назва фонду:</label>
+                    <input type="text" id="fundName" required placeholder="Наприклад: Червоний Хрест України">
+                </div>
+                <div class="form-group">
+                    <label>Контакти:</label>
+                    <textarea id="fundContact" required placeholder="тел: 0-800-000-000&#10;website.com"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Умови надання:</label>
+                    <textarea id="fundConditions" required placeholder="Опишіть умови отримання допомоги, необхідні документи тощо"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-success">Зберегти</button>
+                    <button type="button" class="btn btn-cancel" onclick="closeFundModal()">Скасувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        let allResources = [];
         let allFunds = [];
-        let currentCategory = null;
+        let currentResourceId = null;
+        let editingResourceId = null;
+        let editingFundId = null;
+        let currentSort = 'custom';
 
         async function loadData() {
             try {
-                const response = await fetch('/content/funds.json');
-                const data = await response.json();
-                allFunds = data.funds || [];
-                renderCategories();
+                const [resourcesResponse, fundsResponse] = await Promise.all([
+                    fetch('/content/resources.json'),
+                    fetch('/content/funds.json')
+                ]);
+
+                const resourcesData = await resourcesResponse.json();
+                const fundsData = await fundsResponse.json();
+
+                allResources = resourcesData.resources || [];
+                allFunds = fundsData.funds || [];
+
+                loadCustomOrder();
+                renderResources();
             } catch (error) {
                 console.error('Error loading data:', error);
                 document.getElementById('resourcesList').innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Помилка завантаження</p>';
             }
         }
 
-        function renderCategories() {
-            const categories = [...new Set(allFunds.map(f => f.category))];
-            const list = document.getElementById('resourcesList');
+        function applySorting() {
+            currentSort = document.getElementById('sortSelect').value;
+            let sortedResources = [...allResources];
 
-            list.innerHTML = categories.map(category => {
-                const count = allFunds.filter(f => f.category === category).length;
-                const icon = getCategoryIcon(category);
-                return `
-                    <div class="resource-item ${currentCategory === category ? 'active' : ''}" onclick="showCategory('${category}')">
-                        <div class="resource-info">
-                            <div class="resource-name">${icon} ${category}</div>
-                            <div class="resource-desc">${count} ${count === 1 ? 'фонд' : 'фонди'}</div>
-                        </div>
+            switch(currentSort) {
+                case 'az':
+                    sortedResources.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+                    break;
+                case 'za':
+                    sortedResources.sort((a, b) => b.name.localeCompare(a.name, 'uk'));
+                    break;
+                case 'custom':
+                default:
+                    sortedResources.sort((a, b) => (a.order || 0) - (b.order || 0));
+                    break;
+            }
+
+            displayResources(sortedResources);
+        }
+
+        function displayResources(resources) {
+            const list = document.getElementById('resourcesList');
+            list.innerHTML = '';
+
+            resources.forEach((resource, index) => {
+                const item = document.createElement('div');
+                item.className = 'resource-item';
+                item.draggable = currentSort === 'custom';
+                item.dataset.resourceId = resource.id;
+                item.dataset.index = index;
+
+                if (currentResourceId === resource.id) {
+                    item.classList.add('active');
+                }
+
+                item.innerHTML = `
+                    <div class="resource-info">
+                        <div class="resource-name">${resource.icon} ${resource.name}</div>
+                        <div class="resource-desc">${resource.description}</div>
+                    </div>
+                    <div class="resource-actions">
+                        <button class="icon-btn" onclick="event.stopPropagation(); openEditResourceModal('${resource.id}')" title="Редагувати">✏️</button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); deleteResource('${resource.id}')" title="Видалити">🗑️</button>
                     </div>
                 `;
-            }).join('');
+
+                if (currentSort === 'custom') {
+                    item.style.cursor = 'move';
+                    item.addEventListener('dragstart', handleDragStart);
+                    item.addEventListener('dragover', handleDragOver);
+                    item.addEventListener('drop', handleDrop);
+                    item.addEventListener('dragend', handleDragEnd);
+                } else {
+                    item.style.cursor = 'pointer';
+                }
+
+                item.onclick = (e) => {
+                    if (!e.target.closest('.icon-btn')) {
+                        showFunds(resource);
+                    }
+                };
+
+                list.appendChild(item);
+            });
         }
 
-        function getCategoryIcon(category) {
-            const icons = {
-                'Діти': '👶',
-                'Медицина': '🏥',
-                'Тварини': '🐾',
-                'Освіта': '📚',
-                'Інше': '🤝'
-            };
-            return icons[category] || '📦';
+        function renderResources() {
+            applySorting();
         }
 
-        function showCategory(category) {
-            currentCategory = category;
-            document.getElementById('contentTitle').textContent = `${getCategoryIcon(category)} ${category}`;
-            renderCategories();
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+
+            const target = e.target.closest('.resource-item');
+            if (target && target !== draggedElement) {
+                target.classList.add('drag-over');
+            }
+
+            return false;
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            const target = e.target.closest('.resource-item');
+            if (draggedElement !== target && target) {
+                const draggedIndex = parseInt(draggedElement.dataset.index);
+                const targetIndex = parseInt(target.dataset.index);
+
+                const temp = allResources[draggedIndex];
+                allResources.splice(draggedIndex, 1);
+                allResources.splice(targetIndex, 0, temp);
+
+                allResources.forEach((res, idx) => {
+                    res.order = idx;
+                });
+
+                saveCustomOrder();
+                displayResources(allResources);
+            }
+
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.resource-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+        }
+
+        function saveCustomOrder() {
+            const orderMap = {};
+            allResources.forEach((res, idx) => {
+                orderMap[res.id] = idx;
+            });
+            localStorage.setItem('resourceOrder', JSON.stringify(orderMap));
+        }
+
+        function loadCustomOrder() {
+            const saved = localStorage.getItem('resourceOrder');
+            if (saved) {
+                try {
+                    const orderMap = JSON.parse(saved);
+                    allResources.forEach(res => {
+                        if (orderMap[res.id] !== undefined) {
+                            res.order = orderMap[res.id];
+                        }
+                    });
+                } catch (e) {
+                    console.error('Failed to load custom order:', e);
+                }
+            }
+        }
+
+        function showFunds(resource) {
+            currentResourceId = resource.id;
+            document.getElementById('contentTitle').textContent = `${resource.icon} ${resource.name}`;
+            document.getElementById('addFundBtn').style.display = 'block';
+
+            renderResources();
             renderFunds();
         }
 
         function renderFunds() {
-            const categoryFilter = document.getElementById('categoryFilter').value;
             const grid = document.getElementById('fundsGrid');
+            const funds = allFunds.filter(f => f.resource_id === currentResourceId);
 
-            let filtered = allFunds;
-
-            if (currentCategory) {
-                filtered = filtered.filter(f => f.category === currentCategory);
-            }
-
-            if (categoryFilter) {
-                filtered = filtered.filter(f => f.category === categoryFilter);
-            }
-
-            if (filtered.length === 0) {
+            if (funds.length === 0) {
                 grid.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">📋</div>
                         <div class="empty-state-text">Немає фондів</div>
+                        <p>Натисніть "➕ Додати фонд", щоб додати перший фонд</p>
                     </div>
                 `;
                 return;
             }
 
-            grid.innerHTML = filtered.map(fund => `
+            grid.innerHTML = funds.map((fund, index) => `
                 <div class="fund-card">
-                    <div class="fund-category">${fund.category}</div>
                     <div class="fund-header">
                         <div class="fund-name">${fund.name}</div>
-                    </div>
-                    ${fund.phone || fund.email || fund.website ? `
-                        <div class="fund-contact">
-                            ${fund.phone ? `📞 <a href="tel:${fund.phone}">${fund.phone}</a><br>` : ''}
-                            ${fund.email ? `✉️ <a href="mailto:${fund.email}">${fund.email}</a><br>` : ''}
-                            ${fund.website ? `🌐 <a href="${fund.website}" target="_blank">${fund.website}</a>` : ''}
+                        <div class="fund-actions">
+                            <button class="icon-btn" onclick="openEditFundModal(${index})" title="Редагувати">✏️</button>
+                            <button class="icon-btn" onclick="deleteFund(${index})" title="Видалити">🗑️</button>
                         </div>
-                    ` : ''}
-                    <div class="fund-description">${fund.description}</div>
+                    </div>
+                    <div class="fund-contact">📞 ${fund.contact}</div>
+                    <div class="fund-conditions">${fund.conditions}</div>
                 </div>
             `).join('');
         }
 
-        document.getElementById('categoryFilter').addEventListener('change', renderFunds);
+        // Модальні вікна для ресурсів
+        function openAddResourceModal() {
+            editingResourceId = null;
+            document.getElementById('resourceModalTitle').textContent = 'Додати ресурс';
+            document.getElementById('resourceName').value = '';
+            document.getElementById('resourceDescription').value = '';
+            document.getElementById('resourceIcon').value = '';
+            document.getElementById('resourceModal').classList.add('active');
+        }
+
+        function openEditResourceModal(resourceId) {
+            editingResourceId = resourceId;
+            const resource = allResources.find(r => r.id === resourceId);
+            document.getElementById('resourceModalTitle').textContent = 'Редагувати ресурс';
+            document.getElementById('resourceName').value = resource.name;
+            document.getElementById('resourceDescription').value = resource.description;
+            document.getElementById('resourceIcon').value = resource.icon;
+            document.getElementById('resourceModal').classList.add('active');
+        }
+
+        function closeResourceModal() {
+            document.getElementById('resourceModal').classList.remove('active');
+        }
+
+        document.getElementById('resourceForm').onsubmit = function(e) {
+            e.preventDefault();
+            alert('Для збереження змін використовуйте адмін-панель: /admin/');
+            closeResourceModal();
+        };
+
+        function deleteResource(resourceId) {
+            alert('Для видалення використовуйте адмін-панель: /admin/');
+        }
+
+        // Модальні вікна для фондів
+        function openAddFundModal() {
+            if (!currentResourceId) {
+                alert('Спочатку оберіть ресурс');
+                return;
+            }
+            editingFundId = null;
+            document.getElementById('fundModalTitle').textContent = 'Додати фонд';
+            document.getElementById('fundName').value = '';
+            document.getElementById('fundContact').value = '';
+            document.getElementById('fundConditions').value = '';
+            document.getElementById('fundModal').classList.add('active');
+        }
+
+        function openEditFundModal(fundIndex) {
+            const funds = allFunds.filter(f => f.resource_id === currentResourceId);
+            const fund = funds[fundIndex];
+            editingFundId = fundIndex;
+            document.getElementById('fundModalTitle').textContent = 'Редагувати фонд';
+            document.getElementById('fundName').value = fund.name;
+            document.getElementById('fundContact').value = fund.contact;
+            document.getElementById('fundConditions').value = fund.conditions;
+            document.getElementById('fundModal').classList.add('active');
+        }
+
+        function closeFundModal() {
+            document.getElementById('fundModal').classList.remove('active');
+        }
+
+        document.getElementById('fundForm').onsubmit = function(e) {
+            e.preventDefault();
+            alert('Для збереження змін використовуйте адмін-панель: /admin/');
+            closeFundModal();
+        };
+
+        function deleteFund(fundIndex) {
+            alert('Для видалення використовуйте адмін-панель: /admin/');
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        };
 
         loadData();
 

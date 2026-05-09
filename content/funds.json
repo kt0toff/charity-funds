@@ -1,20 +1,16 @@
 {
   "funds": [
     {
-      "name": "Серце до серця",
-      "description": "Допомога дітям з вадами серця",
-      "phone": "+380501234567",
-      "email": "info@heart.org.ua",
-      "website": "https://heart.org.ua",
-      "category": "Діти"
+      "resource_id": "produkty",
+      "name": "Червоний Хрест України",
+      "contact": "тел: 0-800-300-155\nwebsite: redcross.org.ua",
+      "conditions": "Допомога надається сім'ям з дітьми, пенсіонерам та людям з інвалідністю. Необхідні документи: паспорт, довідка про склад сім'ї."
     },
     {
-      "name": "Табletочки",
-      "description": "Збір коштів на ліки для онкохворих дітей",
-      "phone": "+380671234567",
-      "email": "help@tabletochki.org",
-      "website": "https://tabletochki.org",
-      "category": "Медицина"
+      "resource_id": "medykamenty",
+      "name": "Таблеточки",
+      "contact": "тел: 0-800-305-911\nwebsite: tabletochki.org",
+      "conditions": "Допомога онкохворим дітям. Необхідні: медична довідка, рецепт лікаря, паспорт батьків."
     }
   ]
 }

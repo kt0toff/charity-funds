@@ -11,26 +11,28 @@ collections:
   - name: "content"
     label: "Контент сайту"
     files:
+      - name: "resources"
+        label: "Ресурси"
+        file: "content/resources.json"
+        fields:
+          - label: "Список ресурсів"
+            name: "resources"
+            widget: "list"
+            fields:
+              - {label: "ID", name: "id", widget: "string"}
+              - {label: "Назва", name: "name", widget: "string"}
+              - {label: "Опис", name: "description", widget: "string"}
+              - {label: "Іконка (emoji)", name: "icon", widget: "string", default: "📦"}
+
       - name: "funds"
-        label: "Благодійні фонди"
+        label: "Фонди"
         file: "content/funds.json"
         fields:
           - label: "Список фондів"
             name: "funds"
             widget: "list"
             fields:
-              - {label: "Назва", name: "name", widget: "string"}
-              - {label: "Опис", name: "description", widget: "text"}
-              - {label: "Телефон", name: "phone", widget: "string", required: false}
-              - {label: "Email", name: "email", widget: "string", required: false}
-              - {label: "Веб-сайт", name: "website", widget: "string", required: false}
-              - {label: "Категорія", name: "category", widget: "select", options: ["Діти", "Медицина", "Тварини", "Освіта", "Інше"]}
-
-      - name: "settings"
-        label: "Налаштування сайту"
-        file: "content/settings.json"
-        fields:
-          - {label: "Заголовок сайту", name: "title", widget: "string"}
-          - {label: "Опис", name: "description", widget: "text"}
-          - {label: "Контактний email", name: "contact_email", widget: "string"}
-          - {label: "Контактний телефон", name: "contact_phone", widget: "string"}
+              - {label: "ID ресурсу", name: "resource_id", widget: "string"}
+              - {label: "Назва фонду", name: "name", widget: "string"}
+              - {label: "Контакти", name: "contact", widget: "text"}
+              - {label: "Умови надання", name: "conditions", widget: "text"}
