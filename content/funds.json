@@ -1,0 +1,20 @@
+{
+  "funds": [
+    {
+      "name": "Серце до серця",
+      "description": "Допомога дітям з вадами серця",
+      "phone": "+380501234567",
+      "email": "info@heart.org.ua",
+      "website": "https://heart.org.ua",
+      "category": "Діти"
+    },
+    {
+      "name": "Табletочки",
+      "description": "Збір коштів на ліки для онкохворих дітей",
+      "phone": "+380671234567",
+      "email": "help@tabletochki.org",
+      "website": "https://tabletochki.org",
+      "category": "Медицина"
+    }
+  ]
+}

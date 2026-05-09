@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Довідник благодійних фондів</title>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .admin-link {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .admin-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border 0.3s ease;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .funds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .fund-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .fund-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .fund-category {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .fund-name {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .fund-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .fund-contacts {
+            border-top: 2px solid #f0f0f0;
+            padding-top: 15px;
+        }
+
+        .fund-contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .fund-contact-item a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .fund-contact-item a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .funds-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤝 Довідник благодійних фондів</h1>
+        <p id="siteDescription">База даних благодійних організацій України</p>
+        <a href="/admin/" class="admin-link">🔐 Адмін-панель</a>
+    </div>
+
+    <div class="filters">
+        <div class="filter-group">
+            <label>🔍 Пошук:</label>
+            <input type="text" id="searchInput" placeholder="Введіть назву фонду...">
+        </div>
+        <div class="filter-group">
+            <label>📂 Категорія:</label>
+            <select id="categoryFilter">
+                <option value="">Всі категорії</option>
+                <option value="Діти">Діти</option>
+                <option value="Медицина">Медицина</option>
+                <option value="Тварини">Тварини</option>
+                <option value="Освіта">Освіта</option>
+                <option value="Інше">Інше</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="funds-grid" id="fundsGrid">
+        <div class="empty-state">
+            <div class="empty-state-icon">⏳</div>
+            <div>Завантаження...</div>
+        </div>
+    </div>
+
+    <script>
+        let allFunds = [];
+        let settings = {};
+
+        async function loadData() {
+            try {
+                const [fundsResponse, settingsResponse] = await Promise.all([
+                    fetch('/content/funds.json'),
+                    fetch('/content/settings.json')
+                ]);
+
+                const fundsData = await fundsResponse.json();
+                const settingsData = await settingsResponse.json();
+
+                allFunds = fundsData.funds || [];
+                settings = settingsData;
+
+                document.getElementById('siteDescription').textContent = settings.description || 'База даних благодійних організацій України';
+                document.title = settings.title || 'Довідник благодійних фондів';
+
+                renderFunds();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('fundsGrid').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div>Помилка завантаження даних</div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderFunds() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+
+            const filtered = allFunds.filter(fund => {
+                const matchesSearch = !searchTerm ||
+                    fund.name.toLowerCase().includes(searchTerm) ||
+                    fund.description.toLowerCase().includes(searchTerm);
+                const matchesCategory = !category || fund.category === category;
+                return matchesSearch && matchesCategory;
+            });
+
+            const grid = document.getElementById('fundsGrid');
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <div>Нічого не знайдено</div>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(fund => `
+                <div class="fund-card">
+                    <div class="fund-category">${fund.category}</div>
+                    <div class="fund-name">${fund.name}</div>
+                    <div class="fund-description">${fund.description}</div>
+                    <div class="fund-contacts">
+                        ${fund.phone ? `
+                            <div class="fund-contact-item">
+                                📞 <a href="tel:${fund.phone}">${fund.phone}</a>
+                            </div>
+                        ` : ''}
+                        ${fund.email ? `
+                            <div class="fund-contact-item">
+                                ✉️ <a href="mailto:${fund.email}">${fund.email}</a>
+                            </div>
+                        ` : ''}
+                        ${fund.website ? `
+                            <div class="fund-contact-item">
+                                🌐 <a href="${fund.website}" target="_blank">${fund.website}</a>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('searchInput').addEventListener('input', renderFunds);
+        document.getElementById('categoryFilter').addEventListener('change', renderFunds);
+
+        loadData();
+
+        // Netlify Identity для адмін-панелі
+        if (window.netlifyIdentity) {
+            window.netlifyIdentity.on("init", user => {
+                if (!user) {
+                    window.netlifyIdentity.on("login", () => {
+                        document.location.href = "/admin/";
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
