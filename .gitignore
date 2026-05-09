@@ -1,0 +1,37 @@
+# Не включати в Git
+charity_funds.db
+charity_funds.db-journal
+
+# Резервні копії
+charity_backups/
+*.db.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Логи
+*.log
+run_all.log
+app.log
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Ngrok
+/tmp/
+*.output
