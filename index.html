@@ -522,17 +522,34 @@
 
         async function loadData() {
             try {
-                // Завантажити з GitHub через Netlify Function
+                // Завантажити з Netlify Blobs
                 const [resourcesResponse, fundsResponse] = await Promise.all([
-                    fetch('/.netlify/functions/github-api/content/resources.json'),
-                    fetch('/.netlify/functions/github-api/content/funds.json')
+                    fetch('/.netlify/functions/github-api/resources'),
+                    fetch('/.netlify/functions/github-api/funds')
                 ]);
 
-                const resourcesData = await resourcesResponse.json();
-                const fundsData = await fundsResponse.json();
+                if (resourcesResponse.ok && fundsResponse.ok) {
+                    const resourcesData = await resourcesResponse.json();
+                    const fundsData = await fundsResponse.json();
 
-                allResources = resourcesData.resources || [];
-                allFunds = fundsData.funds || [];
+                    allResources = resourcesData.resources || [];
+                    allFunds = fundsData.funds || [];
+                } else {
+                    // Якщо даних немає, завантажити з JSON файлів (перший раз)
+                    const [resourcesFileResponse, fundsFileResponse] = await Promise.all([
+                        fetch('/content/resources.json'),
+                        fetch('/content/funds.json')
+                    ]);
+
+                    const resourcesData = await resourcesFileResponse.json();
+                    const fundsData = await fundsFileResponse.json();
+
+                    allResources = resourcesData.resources || [];
+                    allFunds = fundsData.funds || [];
+
+                    // Зберегти в Netlify Blobs
+                    await saveToLocalStorage();
+                }
 
                 loadCustomOrder();
                 renderResources();
@@ -544,27 +561,25 @@
 
         async function saveToLocalStorage() {
             try {
-                // Зберегти resources.json
-                await fetch('/.netlify/functions/github-api/content/resources.json', {
+                // Зберегти resources
+                await fetch('/.netlify/functions/github-api/resources', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        content: JSON.stringify({ resources: allResources }, null, 2),
-                        message: 'Оновлено ресурси через сайт'
+                        content: JSON.stringify({ resources: allResources }, null, 2)
                     })
                 });
 
-                // Зберегти funds.json
-                await fetch('/.netlify/functions/github-api/content/funds.json', {
+                // Зберегти funds
+                await fetch('/.netlify/functions/github-api/funds', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        content: JSON.stringify({ funds: allFunds }, null, 2),
-                        message: 'Оновлено фонди через сайт'
+                        content: JSON.stringify({ funds: allFunds }, null, 2)
                     })
                 });
 
-                console.log('Дані збережено в GitHub');
+                console.log('Дані збережено в Netlify Blobs');
             } catch (error) {
                 console.error('Error saving data:', error);
                 alert('Помилка збереження даних. Спробуйте ще раз.');

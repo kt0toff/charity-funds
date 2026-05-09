@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "description": "Netlify Functions for charity-funds",
   "dependencies": {
-    "node-fetch": "^2.6.7"
+    "@netlify/blobs": "^7.0.0"
   }
 }
