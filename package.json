@@ -1,0 +1,8 @@
+{
+  "name": "charity-funds-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for charity-funds",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}

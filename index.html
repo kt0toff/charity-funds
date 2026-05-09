@@ -522,29 +522,17 @@
 
         async function loadData() {
             try {
-                // Спробувати завантажити з localStorage
-                const savedResources = localStorage.getItem('charity_resources');
-                const savedFunds = localStorage.getItem('charity_funds');
+                // Завантажити з GitHub через Netlify Function
+                const [resourcesResponse, fundsResponse] = await Promise.all([
+                    fetch('/.netlify/functions/github-api/content/resources.json'),
+                    fetch('/.netlify/functions/github-api/content/funds.json')
+                ]);
 
-                if (savedResources && savedFunds) {
-                    allResources = JSON.parse(savedResources);
-                    allFunds = JSON.parse(savedFunds);
-                } else {
-                    // Якщо немає в localStorage, завантажити з JSON файлів
-                    const [resourcesResponse, fundsResponse] = await Promise.all([
-                        fetch('/content/resources.json'),
-                        fetch('/content/funds.json')
-                    ]);
+                const resourcesData = await resourcesResponse.json();
+                const fundsData = await fundsResponse.json();
 
-                    const resourcesData = await resourcesResponse.json();
-                    const fundsData = await fundsResponse.json();
-
-                    allResources = resourcesData.resources || [];
-                    allFunds = fundsData.funds || [];
-
-                    // Зберегти в localStorage
-                    saveToLocalStorage();
-                }
+                allResources = resourcesData.resources || [];
+                allFunds = fundsData.funds || [];
 
                 loadCustomOrder();
                 renderResources();
@@ -554,9 +542,33 @@
             }
         }
 
-        function saveToLocalStorage() {
-            localStorage.setItem('charity_resources', JSON.stringify(allResources));
-            localStorage.setItem('charity_funds', JSON.stringify(allFunds));
+        async function saveToLocalStorage() {
+            try {
+                // Зберегти resources.json
+                await fetch('/.netlify/functions/github-api/content/resources.json', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: JSON.stringify({ resources: allResources }, null, 2),
+                        message: 'Оновлено ресурси через сайт'
+                    })
+                });
+
+                // Зберегти funds.json
+                await fetch('/.netlify/functions/github-api/content/funds.json', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content: JSON.stringify({ funds: allFunds }, null, 2),
+                        message: 'Оновлено фонди через сайт'
+                    })
+                });
+
+                console.log('Дані збережено в GitHub');
+            } catch (error) {
+                console.error('Error saving data:', error);
+                alert('Помилка збереження даних. Спробуйте ще раз.');
+            }
         }
 
         function applySorting() {
