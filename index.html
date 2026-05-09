@@ -450,6 +450,7 @@
                 <h2 class="content-title" id="contentTitle">Оберіть ресурс</h2>
                 <div class="header-actions">
                     <button class="btn btn-success" id="addFundBtn" onclick="openAddFundModal()" style="display: none;">➕ Додати фонд</button>
+                    <button class="btn" onclick="showBackupHistory()" title="Переглянути та відновити бекапи">🕐 Історія бекапів</button>
                     <button class="btn" onclick="importData()">📥 Імпорт</button>
                     <button class="btn" onclick="exportData()">💾 Експорт</button>
                 </div>
@@ -524,28 +525,45 @@
 
         async function loadData() {
             try {
-                // Спробувати завантажити з localStorage
+                // 1. Спочатку спробувати завантажити з localStorage
                 const savedResources = localStorage.getItem('charity_resources');
                 const savedFunds = localStorage.getItem('charity_funds');
 
                 if (savedResources && savedFunds) {
                     allResources = JSON.parse(savedResources);
                     allFunds = JSON.parse(savedFunds);
+                    console.log('✅ Дані завантажено з localStorage');
                 } else {
-                    // Якщо немає в localStorage, завантажити з JSON файлів
-                    const [resourcesResponse, fundsResponse] = await Promise.all([
-                        fetch('/content/resources.json'),
-                        fetch('/content/funds.json')
-                    ]);
+                    // 2. Якщо немає в localStorage, спробувати IndexedDB
+                    const backup = await loadBackupFromIndexedDB();
 
-                    const resourcesData = await resourcesResponse.json();
-                    const fundsData = await fundsResponse.json();
+                    if (backup) {
+                        allResources = backup.resources;
+                        allFunds = backup.funds;
+                        if (backup.resourceOrder) {
+                            localStorage.setItem('resourceOrder', JSON.stringify(backup.resourceOrder));
+                        }
+                        // Відновити в localStorage
+                        localStorage.setItem('charity_resources', JSON.stringify(allResources));
+                        localStorage.setItem('charity_funds', JSON.stringify(allFunds));
+                        console.log('✅ Дані відновлено з IndexedDB бекапу');
+                    } else {
+                        // 3. Якщо немає ніде, завантажити з JSON файлів
+                        const [resourcesResponse, fundsResponse] = await Promise.all([
+                            fetch('/content/resources.json'),
+                            fetch('/content/funds.json')
+                        ]);
 
-                    allResources = resourcesData.resources || [];
-                    allFunds = fundsData.funds || [];
+                        const resourcesData = await resourcesResponse.json();
+                        const fundsData = await fundsResponse.json();
 
-                    // Зберегти в localStorage
-                    saveToLocalStorage();
+                        allResources = resourcesData.resources || [];
+                        allFunds = fundsData.funds || [];
+
+                        // Зберегти в localStorage та IndexedDB
+                        saveToLocalStorage();
+                        console.log('✅ Дані завантажено з JSON файлів');
+                    }
                 }
 
                 loadCustomOrder();
@@ -560,7 +578,192 @@
             localStorage.setItem('charity_resources', JSON.stringify(allResources));
             localStorage.setItem('charity_funds', JSON.stringify(allFunds));
             console.log('Дані збережено в localStorage');
+
+            // Також зберегти в IndexedDB для додаткового захисту
+            await saveBackupToIndexedDB();
         }
+
+        // ========== IndexedDB Backup System ==========
+        const DB_NAME = 'CharityBackupDB';
+        const STORE_NAME = 'backups';
+        const MAX_BACKUPS = 10; // Зберігати останні 10 бекапів
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                        store.createIndex('timestamp', 'timestamp', { unique: false });
+                    }
+                };
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveBackupToIndexedDB() {
+            try {
+                const db = await openDB();
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+
+                const backup = {
+                    resources: allResources,
+                    funds: allFunds,
+                    resourceOrder: JSON.parse(localStorage.getItem('resourceOrder') || '{}'),
+                    timestamp: new Date().toISOString(),
+                    date: new Date().toLocaleString('uk-UA')
+                };
+
+                store.add(backup);
+
+                // Видалити старі бекапи, залишити тільки останні MAX_BACKUPS
+                const allBackups = await new Promise((resolve) => {
+                    const req = store.getAll();
+                    req.onsuccess = () => resolve(req.result);
+                });
+
+                if (allBackups.length > MAX_BACKUPS) {
+                    const toDelete = allBackups.slice(0, allBackups.length - MAX_BACKUPS);
+                    toDelete.forEach(b => store.delete(b.id));
+                }
+
+                console.log('✅ Бекап збережено в IndexedDB:', backup.date);
+            } catch (error) {
+                console.error('❌ Помилка збереження в IndexedDB:', error);
+            }
+        }
+
+        async function loadBackupFromIndexedDB() {
+            try {
+                const db = await openDB();
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+
+                return new Promise((resolve) => {
+                    const request = store.getAll();
+                    request.onsuccess = () => {
+                        const backups = request.result;
+                        if (backups.length > 0) {
+                            const latest = backups[backups.length - 1];
+                            console.log('📦 Знайдено бекап в IndexedDB:', latest.date);
+                            resolve(latest);
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    request.onerror = () => resolve(null);
+                });
+            } catch (error) {
+                console.error('❌ Помилка завантаження з IndexedDB:', error);
+                return null;
+            }
+        }
+
+        async function getAllBackups() {
+            try {
+                const db = await openDB();
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+
+                return new Promise((resolve) => {
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => resolve([]);
+                });
+            } catch (error) {
+                console.error('❌ Помилка отримання бекапів:', error);
+                return [];
+            }
+        }
+
+        async function restoreFromBackup(backupId) {
+            try {
+                const db = await openDB();
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+
+                return new Promise((resolve) => {
+                    const request = store.get(backupId);
+                    request.onsuccess = () => {
+                        const backup = request.result;
+                        if (backup) {
+                            allResources = backup.resources;
+                            allFunds = backup.funds;
+                            if (backup.resourceOrder) {
+                                localStorage.setItem('resourceOrder', JSON.stringify(backup.resourceOrder));
+                            }
+                            saveToLocalStorage();
+                            loadCustomOrder();
+                            renderResources();
+
+                            // Скинути вибраний ресурс
+                            currentResourceId = null;
+                            document.getElementById('contentTitle').textContent = 'Оберіть ресурс';
+                            document.getElementById('addFundBtn').style.display = 'none';
+                            document.getElementById('fundsGrid').innerHTML = '';
+
+                            alert('✅ Дані відновлено з бекапу: ' + backup.date);
+                            resolve(true);
+                        } else {
+                            alert('❌ Бекап не знайдено');
+                            resolve(false);
+                        }
+                    };
+                    request.onerror = () => {
+                        alert('❌ Помилка відновлення бекапу');
+                        resolve(false);
+                    };
+                });
+            } catch (error) {
+                console.error('❌ Помилка відновлення:', error);
+                alert('❌ Помилка відновлення бекапу');
+                return false;
+            }
+        }
+
+        async function showBackupHistory() {
+            const backups = await getAllBackups();
+
+            if (backups.length === 0) {
+                alert('📋 Немає збережених бекапів');
+                return;
+            }
+
+            let message = '📋 Історія бекапів:\n\n';
+            backups.forEach((b, i) => {
+                message += `${i + 1}. ${b.date}\n   Ресурсів: ${b.resources.length}, Фондів: ${b.funds.length}\n\n`;
+            });
+
+            const choice = prompt(message + '\nВведіть номер бекапу для відновлення (або 0 для скасування):');
+
+            if (choice && choice !== '0') {
+                const index = parseInt(choice) - 1;
+                if (index >= 0 && index < backups.length) {
+                    if (confirm('Це замінить всі поточні дані. Продовжити?')) {
+                        await restoreFromBackup(backups[index].id);
+                    }
+                } else {
+                    alert('❌ Невірний номер бекапу');
+                }
+            }
+        }
+
+        // Автоматичний бекап кожні 30 хвилин
+        setInterval(() => {
+            saveBackupToIndexedDB();
+            console.log('⏰ Автоматичний бекап виконано');
+        }, 30 * 60 * 1000);
+
+        // Бекап при закритті сторінки
+        window.addEventListener('beforeunload', () => {
+            saveBackupToIndexedDB();
+        });
+        // ========== End IndexedDB Backup System ==========
 
         function applySorting() {
             currentSort = document.getElementById('sortSelect').value;
