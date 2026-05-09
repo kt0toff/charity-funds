@@ -58,7 +58,7 @@ def init_db():
 
 @app.route('/')
 def index():
-    return send_file('charity_funds.html')
+    return send_file('charity_funds.html', mimetype='text/html')
 
 @app.route('/api/resources', methods=['GET'])
 def get_resources():
