@@ -15,91 +15,193 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f5f5f5;
-            min-height: 100vh;
-            padding: 20px;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        .header {
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Ліва панель - список ресурсів */
+        .sidebar {
+            min-width: 280px;
+            max-width: 500px;
+            width: auto;
+            background: white;
+            border-right: 2px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            resize: horizontal;
+            overflow: auto;
+        }
+
+        .sidebar-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
+            padding: 20px;
             text-align: center;
         }
 
-        .header h1 {
-            font-size: 2.5em;
+        .sidebar-header h1 {
+            font-size: 1.5em;
             margin-bottom: 10px;
         }
 
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .admin-link {
-            display: inline-block;
+        .add-resource-btn {
             background: white;
             color: #667eea;
-            padding: 12px 30px;
-            border-radius: 25px;
-            text-decoration: none;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
             font-weight: 600;
-            margin-top: 20px;
+            margin-top: 10px;
             transition: all 0.3s ease;
         }
 
-        .admin-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        .add-resource-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
-        .filters {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        .filter-section {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
         }
 
-        .filter-group {
-            margin-bottom: 15px;
-        }
-
-        .filter-group label {
-            display: block;
-            font-weight: 600;
+        .filter-label {
+            font-size: 0.9em;
+            color: #666;
             margin-bottom: 8px;
-            color: #333;
+            font-weight: 600;
         }
 
-        .filter-group select,
-        .filter-group input {
+        .filter-select {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
-            font-size: 1em;
+            font-size: 0.95em;
+            background: white;
+            cursor: pointer;
             transition: border 0.3s ease;
         }
 
-        .filter-group select:focus,
-        .filter-group input:focus {
+        .filter-select:focus {
             outline: none;
             border-color: #667eea;
         }
 
+        .resources-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .resource-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .resource-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .resource-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .resource-info {
+            flex: 1;
+            min-width: 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .resource-name {
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .resource-desc {
+            font-size: 0.85em;
+            opacity: 0.8;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .admin-link-sidebar {
+            display: block;
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .admin-link-sidebar:hover {
+            background: #764ba2;
+        }
+
+        /* Права панель - сітка фондів */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-header {
+            background: white;
+            padding: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-title {
+            font-size: 2em;
+            color: #667eea;
+        }
+
         .funds-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
+            align-content: start;
         }
 
         .fund-card {
             background: white;
             border-radius: 15px;
-            padding: 25px;
+            padding: 20px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
             border: 2px solid transparent;
@@ -111,52 +213,53 @@
             border-color: #667eea;
         }
 
-        .fund-category {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 600;
+        .fund-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
             margin-bottom: 15px;
         }
 
         .fund-name {
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: 600;
-            color: #333;
-            margin-bottom: 15px;
+            color: #667eea;
+            flex: 1;
+        }
+
+        .fund-category {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .fund-contact {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .fund-contact a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .fund-contact a:hover {
+            text-decoration: underline;
         }
 
         .fund-description {
-            color: #666;
+            color: #333;
             line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        .fund-contacts {
-            border-top: 2px solid #f0f0f0;
-            padding-top: 15px;
-        }
-
-        .fund-contact-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-            color: #555;
-        }
-
-        .fund-contact-item a {
-            color: #667eea;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .fund-contact-item a:hover {
-            color: #764ba2;
-            text-decoration: underline;
+            font-size: 0.95em;
         }
 
         .empty-state {
@@ -170,7 +273,31 @@
             margin-bottom: 20px;
         }
 
+        .empty-state-text {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
         @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 200px;
+            }
+
+            .resources-list {
+                display: flex;
+                overflow-x: auto;
+                overflow-y: hidden;
+            }
+
+            .resource-item {
+                min-width: 200px;
+            }
+
             .funds-grid {
                 grid-template-columns: 1fr;
             }
@@ -178,88 +305,113 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🤝 Довідник благодійних фондів</h1>
-        <p id="siteDescription">База даних благодійних організацій України</p>
-        <a href="/admin/" class="admin-link">🔐 Адмін-панель</a>
-    </div>
-
-    <div class="filters">
-        <div class="filter-group">
-            <label>🔍 Пошук:</label>
-            <input type="text" id="searchInput" placeholder="Введіть назву фонду...">
+    <div class="container">
+        <!-- Ліва панель - список ресурсів -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>🤝 Ресурси</h1>
+            </div>
+            <div class="filter-section">
+                <div class="filter-label">Категорія:</div>
+                <select class="filter-select" id="categoryFilter">
+                    <option value="">Всі категорії</option>
+                    <option value="Діти">Діти</option>
+                    <option value="Медицина">Медицина</option>
+                    <option value="Тварини">Тварини</option>
+                    <option value="Освіта">Освіта</option>
+                    <option value="Інше">Інше</option>
+                </select>
+            </div>
+            <div class="resources-list" id="resourcesList"></div>
+            <a href="/admin/" class="admin-link-sidebar">🔐 Адмін-панель</a>
         </div>
-        <div class="filter-group">
-            <label>📂 Категорія:</label>
-            <select id="categoryFilter">
-                <option value="">Всі категорії</option>
-                <option value="Діти">Діти</option>
-                <option value="Медицина">Медицина</option>
-                <option value="Тварини">Тварини</option>
-                <option value="Освіта">Освіта</option>
-                <option value="Інше">Інше</option>
-            </select>
-        </div>
-    </div>
 
-    <div class="funds-grid" id="fundsGrid">
-        <div class="empty-state">
-            <div class="empty-state-icon">⏳</div>
-            <div>Завантаження...</div>
+        <!-- Права панель - сітка фондів -->
+        <div class="main-content">
+            <div class="content-header">
+                <h2 class="content-title" id="contentTitle">Оберіть категорію</h2>
+            </div>
+            <div class="funds-grid" id="fundsGrid">
+                <div class="empty-state">
+                    <div class="empty-state-icon">👈</div>
+                    <div class="empty-state-text">Оберіть категорію зі списку</div>
+                    <p>Натисніть на категорію ліворуч, щоб побачити фонди</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         let allFunds = [];
-        let settings = {};
+        let currentCategory = null;
 
         async function loadData() {
             try {
-                const [fundsResponse, settingsResponse] = await Promise.all([
-                    fetch('/content/funds.json'),
-                    fetch('/content/settings.json')
-                ]);
-
-                const fundsData = await fundsResponse.json();
-                const settingsData = await settingsResponse.json();
-
-                allFunds = fundsData.funds || [];
-                settings = settingsData;
-
-                document.getElementById('siteDescription').textContent = settings.description || 'База даних благодійних організацій України';
-                document.title = settings.title || 'Довідник благодійних фондів';
-
-                renderFunds();
+                const response = await fetch('/content/funds.json');
+                const data = await response.json();
+                allFunds = data.funds || [];
+                renderCategories();
             } catch (error) {
                 console.error('Error loading data:', error);
-                document.getElementById('fundsGrid').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">❌</div>
-                        <div>Помилка завантаження даних</div>
-                    </div>
-                `;
+                document.getElementById('resourcesList').innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Помилка завантаження</p>';
             }
         }
 
+        function renderCategories() {
+            const categories = [...new Set(allFunds.map(f => f.category))];
+            const list = document.getElementById('resourcesList');
+
+            list.innerHTML = categories.map(category => {
+                const count = allFunds.filter(f => f.category === category).length;
+                const icon = getCategoryIcon(category);
+                return `
+                    <div class="resource-item ${currentCategory === category ? 'active' : ''}" onclick="showCategory('${category}')">
+                        <div class="resource-info">
+                            <div class="resource-name">${icon} ${category}</div>
+                            <div class="resource-desc">${count} ${count === 1 ? 'фонд' : 'фонди'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getCategoryIcon(category) {
+            const icons = {
+                'Діти': '👶',
+                'Медицина': '🏥',
+                'Тварини': '🐾',
+                'Освіта': '📚',
+                'Інше': '🤝'
+            };
+            return icons[category] || '📦';
+        }
+
+        function showCategory(category) {
+            currentCategory = category;
+            document.getElementById('contentTitle').textContent = `${getCategoryIcon(category)} ${category}`;
+            renderCategories();
+            renderFunds();
+        }
+
         function renderFunds() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const category = document.getElementById('categoryFilter').value;
-
-            const filtered = allFunds.filter(fund => {
-                const matchesSearch = !searchTerm ||
-                    fund.name.toLowerCase().includes(searchTerm) ||
-                    fund.description.toLowerCase().includes(searchTerm);
-                const matchesCategory = !category || fund.category === category;
-                return matchesSearch && matchesCategory;
-            });
-
+            const categoryFilter = document.getElementById('categoryFilter').value;
             const grid = document.getElementById('fundsGrid');
+
+            let filtered = allFunds;
+
+            if (currentCategory) {
+                filtered = filtered.filter(f => f.category === currentCategory);
+            }
+
+            if (categoryFilter) {
+                filtered = filtered.filter(f => f.category === categoryFilter);
+            }
 
             if (filtered.length === 0) {
                 grid.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">🔍</div>
-                        <div>Нічого не знайдено</div>
+                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-text">Немає фондів</div>
                     </div>
                 `;
                 return;
@@ -268,35 +420,26 @@
             grid.innerHTML = filtered.map(fund => `
                 <div class="fund-card">
                     <div class="fund-category">${fund.category}</div>
-                    <div class="fund-name">${fund.name}</div>
-                    <div class="fund-description">${fund.description}</div>
-                    <div class="fund-contacts">
-                        ${fund.phone ? `
-                            <div class="fund-contact-item">
-                                📞 <a href="tel:${fund.phone}">${fund.phone}</a>
-                            </div>
-                        ` : ''}
-                        ${fund.email ? `
-                            <div class="fund-contact-item">
-                                ✉️ <a href="mailto:${fund.email}">${fund.email}</a>
-                            </div>
-                        ` : ''}
-                        ${fund.website ? `
-                            <div class="fund-contact-item">
-                                🌐 <a href="${fund.website}" target="_blank">${fund.website}</a>
-                            </div>
-                        ` : ''}
+                    <div class="fund-header">
+                        <div class="fund-name">${fund.name}</div>
                     </div>
+                    ${fund.phone || fund.email || fund.website ? `
+                        <div class="fund-contact">
+                            ${fund.phone ? `📞 <a href="tel:${fund.phone}">${fund.phone}</a><br>` : ''}
+                            ${fund.email ? `✉️ <a href="mailto:${fund.email}">${fund.email}</a><br>` : ''}
+                            ${fund.website ? `🌐 <a href="${fund.website}" target="_blank">${fund.website}</a>` : ''}
+                        </div>
+                    ` : ''}
+                    <div class="fund-description">${fund.description}</div>
                 </div>
             `).join('');
         }
 
-        document.getElementById('searchInput').addEventListener('input', renderFunds);
         document.getElementById('categoryFilter').addEventListener('change', renderFunds);
 
         loadData();
 
-        // Netlify Identity для адмін-панелі
+        // Netlify Identity
         if (window.netlifyIdentity) {
             window.netlifyIdentity.on("init", user => {
                 if (!user) {
