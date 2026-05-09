@@ -9,6 +9,8 @@ CORS(app)
 
 # Використовуємо Render Disk для збереження бази даних
 DATA_DIR = os.environ.get('DATA_DIR', '.')
+# Створюємо директорію якщо не існує
+os.makedirs(DATA_DIR, exist_ok=True)
 DB_PATH = os.path.join(DATA_DIR, 'charity_funds.db')
 
 print(f"📊 База даних буде збережена в: {DB_PATH}")
