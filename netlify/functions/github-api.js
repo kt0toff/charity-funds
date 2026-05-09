@@ -1,4 +1,6 @@
 const { getStore } = require('@netlify/blobs');
+const fs = require('fs');
+const path = require('path');
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -13,19 +15,28 @@ exports.handler = async (event, context) => {
   }
 
   const store = getStore('charity-data');
-  const path = event.path.replace('/.netlify/functions/github-api/', '');
+  const key = event.path.replace('/.netlify/functions/github-api/', '');
 
   try {
     // GET - читання даних
     if (event.httpMethod === 'GET') {
-      const data = await store.get(path, { type: 'json' });
+      let data = await store.get(key, { type: 'json' });
 
+      // Якщо даних немає, завантажити з JSON файлів
       if (!data) {
-        return {
-          statusCode: 404,
-          headers,
-          body: JSON.stringify({ error: 'Not found' })
-        };
+        const filePath = path.join(process.cwd(), 'content', `${key}.json`);
+        if (fs.existsSync(filePath)) {
+          const fileContent = fs.readFileSync(filePath, 'utf-8');
+          data = JSON.parse(fileContent);
+          // Зберегти в Blobs для наступних разів
+          await store.setJSON(key, data);
+        } else {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ error: 'Not found' })
+          };
+        }
       }
 
       return {
@@ -40,7 +51,7 @@ exports.handler = async (event, context) => {
       const { content } = JSON.parse(event.body);
       const data = JSON.parse(content);
 
-      await store.setJSON(path, data);
+      await store.setJSON(key, data);
 
       return {
         statusCode: 200,
