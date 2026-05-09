@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Довідник благодійних фондів</title>
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <style>
         * {
             margin: 0;
@@ -177,21 +176,6 @@
 
         .icon-btn:hover {
             transform: scale(1.2);
-        }
-
-        .admin-link-sidebar {
-            display: block;
-            background: #667eea;
-            color: white;
-            padding: 12px;
-            text-align: center;
-            text-decoration: none;
-            font-weight: 600;
-            transition: background 0.3s ease;
-        }
-
-        .admin-link-sidebar:hover {
-            background: #764ba2;
         }
 
         /* Права панель - сітка фондів */
@@ -458,7 +442,6 @@
                 </select>
             </div>
             <div class="resources-list" id="resourcesList"></div>
-            <a href="/admin/" class="admin-link-sidebar">🔐 Адмін-панель</a>
         </div>
 
         <!-- Права панель - сітка фондів -->
@@ -825,17 +808,6 @@
         };
 
         loadData();
-
-        // Netlify Identity
-        if (window.netlifyIdentity) {
-            window.netlifyIdentity.on("init", user => {
-                if (!user) {
-                    window.netlifyIdentity.on("login", () => {
-                        document.location.href = "/admin/";
-                    });
-                }
-            });
-        }
     </script>
 </body>
 </html>
