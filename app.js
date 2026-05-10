@@ -23,7 +23,6 @@ function renderOrgsTable() {
 
     tbody.innerHTML = sorted.map(org => {
         const realIdx = organizations.indexOf(org);
-        const statusClass = { active: 'status-active', inactive: 'status-inactive', unknown: 'status-unknown' }[org.status || 'unknown'];
         return `
         <tr>
             <td>
@@ -32,11 +31,12 @@ function renderOrgsTable() {
                 ${org.contact ? `<div class="org-sub">📞 ${org.contact.replace(/\n/g,' | ')}</div>` : ''}
             </td>
             <td class="col-status-td">
-                <select class="status-select ${statusClass}" onchange="updateOrgStatus(${realIdx}, this.value)">
-                    <option value="active" ${(org.status||'unknown')==='active'?'selected':''}>✅ Активна</option>
-                    <option value="inactive" ${(org.status||'unknown')==='inactive'?'selected':''}>❌ Неактивна</option>
-                    <option value="unknown" ${(org.status||'unknown')==='unknown'?'selected':''}>❓ Невідомо</option>
-                </select>
+                <input type="text"
+                       class="status-input"
+                       value="${org.status || ''}"
+                       placeholder="Введіть статус..."
+                       onblur="updateOrgStatus(${realIdx}, this.value)"
+                       onkeypress="if(event.key==='Enter') this.blur()">
             </td>
             <td class="col-actions-td">
                 <button class="icon-btn" onclick="openEditOrgModal(${realIdx})" title="Редагувати">✏️</button>
@@ -50,17 +50,12 @@ function updateOrgStatus(idx, status) {
     organizations[idx].status = status;
     saveOrganizationsToLocalStorage();
 
-    // Оновити класи для всіх select елементів
-    document.querySelectorAll('.status-select').forEach(s => {
-        s.className = 'status-select status-' + s.value;
-    });
-
     // Показати короткий індикатор збереження
-    const select = event.target;
-    const originalBg = select.style.background;
-    select.style.background = '#90EE90';
+    const input = event.target;
+    const originalBg = input.style.background;
+    input.style.background = '#90EE90';
     setTimeout(() => {
-        select.style.background = originalBg;
+        input.style.background = originalBg;
     }, 300);
 }
 
@@ -68,8 +63,7 @@ function updateOrgStatus(idx, status) {
 function openAddOrgModal() {
     editingOrgId = null;
     document.getElementById('orgModalTitle').textContent = 'Додати організацію';
-    ['orgName','orgDescription','orgContact','orgIcon'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('orgStatus').value = 'active';
+    ['orgName','orgDescription','orgContact','orgIcon','orgStatus'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('orgModal').classList.add('active');
 }
 
@@ -81,7 +75,7 @@ function openEditOrgModal(idx) {
     document.getElementById('orgDescription').value = org.description;
     document.getElementById('orgContact').value = org.contact || '';
     document.getElementById('orgIcon').value = org.icon || '';
-    document.getElementById('orgStatus').value = org.status || 'unknown';
+    document.getElementById('orgStatus').value = org.status || '';
     document.getElementById('orgModal').classList.add('active');
 }
 

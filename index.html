@@ -342,6 +342,30 @@
             font-size: 15px;
         }
 
+        .status-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            transition: all 0.2s;
+            background: white;
+            color: var(--text);
+        }
+
+        .status-input:focus {
+            outline: none;
+            border-color: var(--purple);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .status-input::placeholder {
+            color: #aaa;
+            font-weight: 400;
+        }
+
         /* ===== MODAL ===== */
         .modal {
             display: none;
@@ -562,11 +586,7 @@
                 </div>
                 <div class="form-group">
                     <label>Статус:</label>
-                    <select id="orgStatus">
-                        <option value="active">✅ Активна</option>
-                        <option value="inactive">❌ Неактивна</option>
-                        <option value="unknown">❓ Невідомо</option>
-                    </select>
+                    <input type="text" id="orgStatus" placeholder="Наприклад: Активна, Перевірена, На паузі...">
                 </div>
                 <div class="modal-actions">
                     <button type="submit" class="btn btn-success">Зберегти</button>
