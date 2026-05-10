@@ -423,25 +423,73 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Стилі для вкладок */
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            color: #667eea;
+            background: white;
+            border-bottom-color: #667eea;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Ліва панель - список ресурсів -->
+        <!-- Ліва панель - список ресурсів або організацій -->
         <div class="sidebar">
-            <div class="sidebar-header">
-                <h1>🤝 Ресурси</h1>
-                <button class="add-resource-btn" onclick="openAddResourceModal()">➕ Додати ресурс</button>
+            <!-- Вкладки -->
+            <div class="tabs">
+                <div class="tab active" id="resourcesTab" onclick="switchToResources()">
+                    🤝 Ресурси
+                </div>
+                <div class="tab" id="organizationsTab" onclick="switchToOrganizations()">
+                    🏛️ Організації
+                </div>
             </div>
-            <div class="filter-section">
-                <div class="filter-label">Сортування:</div>
-                <select class="filter-select" id="sortSelect" onchange="applySorting()">
-                    <option value="custom">Своє налаштування</option>
-                    <option value="az">А → Я</option>
-                    <option value="za">Я → А</option>
-                </select>
+
+            <!-- Контент для Ресурсів -->
+            <div id="resourcesContent">
+                <div class="sidebar-header">
+                    <button class="add-resource-btn" onclick="openAddResourceModal()">➕ Додати ресурс</button>
+                </div>
+                <div class="filter-section">
+                    <div class="filter-label">Сортування:</div>
+                    <select class="filter-select" id="sortSelect" onchange="applySorting()">
+                        <option value="custom">Своє налаштування</option>
+                        <option value="az">А → Я</option>
+                        <option value="za">Я → А</option>
+                    </select>
+                </div>
+                <div class="resources-list" id="resourcesList"></div>
             </div>
-            <div class="resources-list" id="resourcesList"></div>
+
+            <!-- Контент для Організацій -->
+            <div id="organizationsContent" style="display: none;">
+                <div class="sidebar-header">
+                    <button class="add-resource-btn" onclick="openAddOrgModal()">➕ Додати організацію</button>
+                </div>
+                <div class="resources-list" id="organizationsList"></div>
+            </div>
         </div>
 
         <!-- Права панель - сітка фондів -->
@@ -450,8 +498,6 @@
                 <h2 class="content-title" id="contentTitle">Оберіть ресурс</h2>
                 <div class="header-actions">
                     <button class="btn btn-success" id="addFundBtn" onclick="openAddFundModal()" style="display: none;">➕ Додати фонд</button>
-                    <button class="btn btn-success" id="addOrgBtn" onclick="openAddOrgModal()" style="display: none;">➕ Додати організацію</button>
-                    <button class="btn" onclick="showOrganizations()" title="Переглянути благодійні організації">🏛️ Благодійні організації</button>
                     <button class="btn" onclick="importData()">📥 Імпорт</button>
                     <button class="btn" onclick="exportData()">💾 Експорт</button>
                 </div>
@@ -553,9 +599,104 @@
         let editingFundId = null;
         let editingOrgId = null;
         let currentSort = 'custom';
+        let currentTab = 'resources'; // 'resources' або 'organizations'
 
         // Дані благодійних організацій
         let organizations = [];
+
+        // Функції для перемикання вкладок
+        function switchToResources() {
+            currentTab = 'resources';
+            document.getElementById('resourcesTab').classList.add('active');
+            document.getElementById('organizationsTab').classList.remove('active');
+            document.getElementById('resourcesContent').style.display = 'block';
+            document.getElementById('organizationsContent').style.display = 'none';
+
+            // Показати початковий стан справа
+            document.getElementById('contentTitle').textContent = 'Оберіть ресурс';
+            document.getElementById('addFundBtn').style.display = 'none';
+            document.getElementById('fundsGrid').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">👈</div>
+                    <div class="empty-state-text">Оберіть ресурс зі списку</div>
+                    <p>Натисніть на ресурс ліворуч, щоб побачити фонди</p>
+                </div>
+            `;
+            currentResourceId = null;
+            renderResources();
+        }
+
+        function switchToOrganizations() {
+            currentTab = 'organizations';
+            document.getElementById('resourcesTab').classList.remove('active');
+            document.getElementById('organizationsTab').classList.add('active');
+            document.getElementById('resourcesContent').style.display = 'none';
+            document.getElementById('organizationsContent').style.display = 'block';
+
+            renderOrganizationsList();
+            showOrganizationsInMain();
+        }
+
+        function renderOrganizationsList() {
+            const list = document.getElementById('organizationsList');
+
+            if (organizations.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏛️</div>
+                        <div class="empty-state-text">Немає організацій</div>
+                        <p>Натисніть "➕ Додати організацію"</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = organizations.map((org, index) => `
+                <div class="resource-item" onclick="showOrganizationDetails(${index})">
+                    <div class="resource-info">
+                        <div class="resource-name">${org.icon} ${org.name}</div>
+                        <div class="resource-desc">${org.description}</div>
+                    </div>
+                    <div class="resource-actions">
+                        <button class="icon-btn" onclick="event.stopPropagation(); openEditOrgModal(${index})" title="Редагувати">✏️</button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); deleteOrg(${index})" title="Видалити">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showOrganizationsInMain() {
+            document.getElementById('contentTitle').textContent = '🏛️ Благодійні організації';
+            document.getElementById('addFundBtn').style.display = 'none';
+
+            const grid = document.getElementById('fundsGrid');
+
+            if (organizations.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏛️</div>
+                        <div class="empty-state-text">Немає благодійних організацій</div>
+                        <p>Натисніть "➕ Додати організацію" ліворуч</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = organizations.map((org, index) => `
+                <div class="fund-card">
+                    <div class="fund-header">
+                        <div class="fund-name">${org.icon} ${org.name}</div>
+                    </div>
+                    <div class="fund-contact" style="color: #666; margin: 10px 0;">${org.description}</div>
+                    <div class="fund-contact">📞 ${org.contact.replace(/\n/g, '<br>')}</div>
+                </div>
+            `).join('');
+        }
+
+        function showOrganizationDetails(index) {
+            // Показати деталі організації справа (можна розширити функціонал)
+            showOrganizationsInMain();
+        }
 
         async function loadData() {
             try {
@@ -951,7 +1092,6 @@
             currentResourceId = resource.id;
             document.getElementById('contentTitle').textContent = `${resource.icon} ${resource.name}`;
             document.getElementById('addFundBtn').style.display = 'block';
-            document.getElementById('addOrgBtn').style.display = 'none';
 
             renderResources();
             renderFunds();
@@ -988,45 +1128,6 @@
         }
 
         // Функція для відображення благодійних організацій
-        function showOrganizations() {
-            // Скинути вибраний ресурс
-            currentResourceId = null;
-            document.getElementById('contentTitle').textContent = '🏛️ Благодійні організації';
-            document.getElementById('addFundBtn').style.display = 'none';
-            document.getElementById('addOrgBtn').style.display = 'block';
-
-            // Зняти виділення з ресурсів
-            renderResources();
-
-            // Відобразити організації
-            const grid = document.getElementById('fundsGrid');
-
-            if (organizations.length === 0) {
-                grid.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">🏛️</div>
-                        <div class="empty-state-text">Немає благодійних організацій</div>
-                        <p>Натисніть "➕ Додати організацію", щоб додати першу організацію</p>
-                    </div>
-                `;
-                return;
-            }
-
-            grid.innerHTML = organizations.map((org, index) => `
-                <div class="fund-card">
-                    <div class="fund-header">
-                        <div class="fund-name">${org.icon} ${org.name}</div>
-                        <div class="fund-actions">
-                            <button class="icon-btn" onclick="openEditOrgModal(${index})" title="Редагувати">✏️</button>
-                            <button class="icon-btn" onclick="deleteOrg(${index})" title="Видалити">🗑️</button>
-                        </div>
-                    </div>
-                    <div class="fund-contact" style="color: #666; margin: 10px 0;">${org.description}</div>
-                    <div class="fund-contact">📞 ${org.contact.replace(/\n/g, '<br>')}</div>
-                </div>
-            `).join('');
-        }
-
         // Модальні вікна для ресурсів
         function openAddResourceModal() {
             editingResourceId = null;
@@ -1214,7 +1315,8 @@
             }
 
             saveOrganizationsToLocalStorage();
-            showOrganizations();
+            renderOrganizationsList();
+            showOrganizationsInMain();
             closeOrgModal();
         };
 
@@ -1222,7 +1324,8 @@
             if (confirm('Ви впевнені, що хочете видалити цю організацію?')) {
                 organizations.splice(orgIndex, 1);
                 saveOrganizationsToLocalStorage();
-                showOrganizations();
+                renderOrganizationsList();
+                showOrganizationsInMain();
             }
         }
 
