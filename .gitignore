@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.db
+
+# Environment
+.env
+.pc_id
+
+# IDE
+.idea/
+.vscode/
+
+# Claude
+.claude/
+
+# Folders
+paperclip/
+obsidian/
+pc_remote_control/__pycache__/
+
+# Other
+*.rpm
+paired_users.json
