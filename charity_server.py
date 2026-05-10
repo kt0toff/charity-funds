@@ -7,7 +7,13 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-DB_PATH = 'charity_funds.db'
+# Використовуємо Render Disk для збереження бази даних
+DATA_DIR = os.environ.get('DATA_DIR', '.')
+# Створюємо директорію якщо не існує
+os.makedirs(DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(DATA_DIR, 'charity_funds.db')
+
+print(f"📊 База даних буде збережена в: {DB_PATH}")
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -58,7 +64,7 @@ def init_db():
 
 @app.route('/')
 def index():
-    return send_file('charity_funds.html')
+    return send_file('charity_funds.html', mimetype='text/html')
 
 @app.route('/api/resources', methods=['GET'])
 def get_resources():
@@ -169,6 +175,7 @@ def export_data():
 
 if __name__ == '__main__':
     init_db()
-    print("🚀 Сервер запущено на http://localhost:5001")
-    print("📊 База даних: charity_funds.db")
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    port = int(os.environ.get('PORT', 5001))
+    print(f"🚀 Сервер запущено на порту {port}")
+    print(f"📊 База даних: {DB_PATH}")
+    app.run(debug=False, host='0.0.0.0', port=port)
