@@ -450,6 +450,7 @@
                 <h2 class="content-title" id="contentTitle">Оберіть ресурс</h2>
                 <div class="header-actions">
                     <button class="btn btn-success" id="addFundBtn" onclick="openAddFundModal()" style="display: none;">➕ Додати фонд</button>
+                    <button class="btn btn-success" id="addOrgBtn" onclick="openAddOrgModal()" style="display: none;">➕ Додати організацію</button>
                     <button class="btn" onclick="showOrganizations()" title="Переглянути благодійні організації">🏛️ Благодійні організації</button>
                     <button class="btn" onclick="importData()">📥 Імпорт</button>
                     <button class="btn" onclick="exportData()">💾 Експорт</button>
@@ -515,16 +516,46 @@
         </div>
     </div>
 
+    <!-- Модальне вікно для організації -->
+    <div id="orgModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-header" id="orgModalTitle">Додати організацію</h2>
+            <form id="orgForm">
+                <div class="form-group">
+                    <label>Назва організації:</label>
+                    <input type="text" id="orgName" required placeholder="Наприклад: Червоний Хрест України">
+                </div>
+                <div class="form-group">
+                    <label>Опис:</label>
+                    <input type="text" id="orgDescription" required placeholder="Наприклад: Міжнародна гуманітарна організація">
+                </div>
+                <div class="form-group">
+                    <label>Контакти:</label>
+                    <textarea id="orgContact" required placeholder="тел: 0-800-000-000&#10;website.com"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Іконка (emoji):</label>
+                    <input type="text" id="orgIcon" maxlength="2" placeholder="🏛️">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-success">Зберегти</button>
+                    <button type="button" class="btn btn-cancel" onclick="closeOrgModal()">Скасувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         let allResources = [];
         let allFunds = [];
         let currentResourceId = null;
         let editingResourceId = null;
         let editingFundId = null;
+        let editingOrgId = null;
         let currentSort = 'custom';
 
-        // Дані благодійних організацій (порожній масив - додайте свої організації)
-        const organizations = [];
+        // Дані благодійних організацій
+        let organizations = [];
 
         async function loadData() {
             try {
@@ -920,6 +951,7 @@
             currentResourceId = resource.id;
             document.getElementById('contentTitle').textContent = `${resource.icon} ${resource.name}`;
             document.getElementById('addFundBtn').style.display = 'block';
+            document.getElementById('addOrgBtn').style.display = 'none';
 
             renderResources();
             renderFunds();
@@ -961,6 +993,7 @@
             currentResourceId = null;
             document.getElementById('contentTitle').textContent = '🏛️ Благодійні організації';
             document.getElementById('addFundBtn').style.display = 'none';
+            document.getElementById('addOrgBtn').style.display = 'block';
 
             // Зняти виділення з ресурсів
             renderResources();
@@ -973,16 +1006,20 @@
                     <div class="empty-state">
                         <div class="empty-state-icon">🏛️</div>
                         <div class="empty-state-text">Немає благодійних організацій</div>
-                        <p>Додайте організації в масив organizations у коді</p>
+                        <p>Натисніть "➕ Додати організацію", щоб додати першу організацію</p>
                     </div>
                 `;
                 return;
             }
 
-            grid.innerHTML = organizations.map(org => `
+            grid.innerHTML = organizations.map((org, index) => `
                 <div class="fund-card">
                     <div class="fund-header">
                         <div class="fund-name">${org.icon} ${org.name}</div>
+                        <div class="fund-actions">
+                            <button class="icon-btn" onclick="openEditOrgModal(${index})" title="Редагувати">✏️</button>
+                            <button class="icon-btn" onclick="deleteOrg(${index})" title="Видалити">🗑️</button>
+                        </div>
                     </div>
                     <div class="fund-contact" style="color: #666; margin: 10px 0;">${org.description}</div>
                     <div class="fund-contact">📞 ${org.contact.replace(/\n/g, '<br>')}</div>
@@ -1124,10 +1161,89 @@
             }
         }
 
+        // Модальні вікна для організацій
+        function openAddOrgModal() {
+            editingOrgId = null;
+            document.getElementById('orgModalTitle').textContent = 'Додати організацію';
+            document.getElementById('orgName').value = '';
+            document.getElementById('orgDescription').value = '';
+            document.getElementById('orgContact').value = '';
+            document.getElementById('orgIcon').value = '';
+            document.getElementById('orgModal').classList.add('active');
+        }
+
+        function openEditOrgModal(orgIndex) {
+            const org = organizations[orgIndex];
+            editingOrgId = orgIndex;
+            document.getElementById('orgModalTitle').textContent = 'Редагувати організацію';
+            document.getElementById('orgName').value = org.name;
+            document.getElementById('orgDescription').value = org.description;
+            document.getElementById('orgContact').value = org.contact;
+            document.getElementById('orgIcon').value = org.icon;
+            document.getElementById('orgModal').classList.add('active');
+        }
+
+        function closeOrgModal() {
+            document.getElementById('orgModal').classList.remove('active');
+        }
+
+        document.getElementById('orgForm').onsubmit = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('orgName').value;
+            const description = document.getElementById('orgDescription').value;
+            const contact = document.getElementById('orgContact').value;
+            const icon = document.getElementById('orgIcon').value || '🏛️';
+
+            if (editingOrgId !== null) {
+                organizations[editingOrgId] = {
+                    id: organizations[editingOrgId].id,
+                    name,
+                    description,
+                    contact,
+                    icon
+                };
+            } else {
+                const newId = organizations.length > 0 ? Math.max(...organizations.map(o => o.id)) + 1 : 1;
+                organizations.push({
+                    id: newId,
+                    name,
+                    description,
+                    contact,
+                    icon
+                });
+            }
+
+            saveOrganizationsToLocalStorage();
+            showOrganizations();
+            closeOrgModal();
+        };
+
+        function deleteOrg(orgIndex) {
+            if (confirm('Ви впевнені, що хочете видалити цю організацію?')) {
+                organizations.splice(orgIndex, 1);
+                saveOrganizationsToLocalStorage();
+                showOrganizations();
+            }
+        }
+
+        function saveOrganizationsToLocalStorage() {
+            localStorage.setItem('charity_organizations', JSON.stringify(organizations));
+            console.log('✅ Організації збережено в localStorage');
+        }
+
+        function loadOrganizationsFromLocalStorage() {
+            const saved = localStorage.getItem('charity_organizations');
+            if (saved) {
+                organizations = JSON.parse(saved);
+                console.log('✅ Організації завантажено з localStorage');
+            }
+        }
+
         function exportData() {
             const data = {
                 resources: allResources,
-                funds: allFunds
+                funds: allFunds,
+                organizations: organizations
             };
             const dataStr = JSON.stringify(data, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -1156,6 +1272,10 @@
                             if (confirm('Це замінить всі поточні дані. Продовжити?')) {
                                 allResources = data.resources;
                                 allFunds = data.funds;
+                                if (data.organizations) {
+                                    organizations = data.organizations;
+                                    saveOrganizationsToLocalStorage();
+                                }
                                 saveToLocalStorage();
                                 renderResources();
 
@@ -1163,6 +1283,7 @@
                                 currentResourceId = null;
                                 document.getElementById('contentTitle').textContent = 'Оберіть ресурс';
                                 document.getElementById('addFundBtn').style.display = 'none';
+                                document.getElementById('addOrgBtn').style.display = 'none';
                                 document.getElementById('fundsGrid').innerHTML = `
                                     <div class="empty-state">
                                         <div class="empty-state-icon">👈</div>
@@ -1191,6 +1312,7 @@
         };
 
         loadData();
+        loadOrganizationsFromLocalStorage();
     </script>
 </body>
 </html>
