@@ -49,9 +49,19 @@ function renderOrgsTable() {
 function updateOrgStatus(idx, status) {
     organizations[idx].status = status;
     saveOrganizationsToLocalStorage();
+
+    // Оновити класи для всіх select елементів
     document.querySelectorAll('.status-select').forEach(s => {
         s.className = 'status-select status-' + s.value;
     });
+
+    // Показати короткий індикатор збереження
+    const select = event.target;
+    const originalBg = select.style.background;
+    select.style.background = '#90EE90';
+    setTimeout(() => {
+        select.style.background = originalBg;
+    }, 300);
 }
 
 // ===== ORG MODALS =====
