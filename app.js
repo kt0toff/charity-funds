@@ -83,11 +83,11 @@ function closeOrgModal() { document.getElementById('orgModal').classList.remove(
 
 document.getElementById('orgForm').onsubmit = function(e) {
     e.preventDefault();
-    const name = document.getElementById('orgName').value;
-    const description = document.getElementById('orgDescription').value;
-    const contact = document.getElementById('orgContact').value;
+    const name = document.getElementById('orgName').value.trim() || 'Без назви';
+    const description = document.getElementById('orgDescription').value.trim() || '';
+    const contact = document.getElementById('orgContact').value.trim() || '';
     const icon = document.getElementById('orgIcon').value || '🏛️';
-    const status = document.getElementById('orgStatus').value;
+    const status = document.getElementById('orgStatus').value.trim() || '';
 
     if (editingOrgId !== null) {
         organizations[editingOrgId] = { ...organizations[editingOrgId], name, description, contact, icon, status };
@@ -345,8 +345,8 @@ function closeResourceModal() { document.getElementById('resourceModal').classLi
 
 document.getElementById('resourceForm').onsubmit = function(e) {
     e.preventDefault();
-    const name = document.getElementById('resourceName').value;
-    const description = document.getElementById('resourceDescription').value;
+    const name = document.getElementById('resourceName').value.trim() || 'Без назви';
+    const description = document.getElementById('resourceDescription').value.trim() || '';
     const icon = document.getElementById('resourceIcon').value || '📦';
     if (editingResourceId) {
         const r = allResources.find(x => x.id === editingResourceId);
@@ -395,9 +395,9 @@ function closeFundModal() { document.getElementById('fundModal').classList.remov
 
 document.getElementById('fundForm').onsubmit = function(e) {
     e.preventDefault();
-    const name = document.getElementById('fundName').value;
-    const contact = document.getElementById('fundContact').value;
-    const conditions = document.getElementById('fundConditions').value;
+    const name = document.getElementById('fundName').value.trim() || 'Без назви';
+    const contact = document.getElementById('fundContact').value.trim() || '';
+    const conditions = document.getElementById('fundConditions').value.trim() || '';
     if (editingFundId !== null) {
         const funds = allFunds.filter(f => f.resource_id === currentResourceId);
         const fund = funds[editingFundId];
