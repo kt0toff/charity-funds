@@ -450,7 +450,7 @@
                 <h2 class="content-title" id="contentTitle">Оберіть ресурс</h2>
                 <div class="header-actions">
                     <button class="btn btn-success" id="addFundBtn" onclick="openAddFundModal()" style="display: none;">➕ Додати фонд</button>
-                    <button class="btn" onclick="showBackupHistory()" title="Переглянути та відновити бекапи">🕐 Історія бекапів</button>
+                    <button class="btn" onclick="showOrganizations()" title="Переглянути благодійні організації">🏛️ Благодійні організації</button>
                     <button class="btn" onclick="importData()">📥 Імпорт</button>
                     <button class="btn" onclick="exportData()">💾 Експорт</button>
                 </div>
@@ -522,6 +522,9 @@
         let editingResourceId = null;
         let editingFundId = null;
         let currentSort = 'custom';
+
+        // Дані благодійних організацій (порожній масив - додайте свої організації)
+        const organizations = [];
 
         async function loadData() {
             try {
@@ -948,6 +951,41 @@
                     </div>
                     <div class="fund-contact">📞 ${fund.contact}</div>
                     <div class="fund-conditions">${fund.conditions}</div>
+                </div>
+            `).join('');
+        }
+
+        // Функція для відображення благодійних організацій
+        function showOrganizations() {
+            // Скинути вибраний ресурс
+            currentResourceId = null;
+            document.getElementById('contentTitle').textContent = '🏛️ Благодійні організації';
+            document.getElementById('addFundBtn').style.display = 'none';
+
+            // Зняти виділення з ресурсів
+            renderResources();
+
+            // Відобразити організації
+            const grid = document.getElementById('fundsGrid');
+
+            if (organizations.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏛️</div>
+                        <div class="empty-state-text">Немає благодійних організацій</div>
+                        <p>Додайте організації в масив organizations у коді</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = organizations.map(org => `
+                <div class="fund-card">
+                    <div class="fund-header">
+                        <div class="fund-name">${org.icon} ${org.name}</div>
+                    </div>
+                    <div class="fund-contact" style="color: #666; margin: 10px 0;">${org.description}</div>
+                    <div class="fund-contact">📞 ${org.contact.replace(/\n/g, '<br>')}</div>
                 </div>
             `).join('');
         }
