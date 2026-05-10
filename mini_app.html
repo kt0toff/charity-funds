@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>💑 Couple App</title>
+<style>
+  :root {
+    --primary: #8b5cf6;
+    --primary2: #ec4899;
+    --grad: linear-gradient(135deg, #8b5cf6, #ec4899);
+    --bg: #fafafa;
+    --card: #ffffff;
+    --border: #f0f0f5;
+    --text: #1a1a2e;
+    --muted: #9090a8;
+    --accent: #8b5cf6;
+    --green: #22c55e;
+    --red: #ef4444;
+  }
+
+  [data-theme="dark"] {
+    --bg: #0f0f14;
+    --card: #1a1a24;
+    --border: #2a2a35;
+    --text: #e8e8f0;
+    --muted: #7a7a90;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:-apple-system,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; transition:background .3s,color .3s; }
+
+  #toast {
+    position:fixed; top:70px; left:50%; transform:translateX(-50%) translateY(-10px);
+    background:#1a1a2e; color:#fff; padding:9px 18px; border-radius:30px;
+    font-size:13px; opacity:0; transition:all .3s; pointer-events:none; z-index:999; white-space:nowrap;
+  }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .top-bar {
+    background:var(--grad); color:white; padding:14px 16px 12px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:100;
+  }
+  .top-bar h1 { font-size:16px; font-weight:800; }
+  .top-bar-right { display:flex; align-items:center; gap:12px; }
+  .coins-badge { background:rgba(255,255,255,.2); padding:5px 12px; border-radius:20px;
+    font-size:13px; font-weight:700; backdrop-filter:blur(4px); }
+  .theme-toggle { background:rgba(255,255,255,.2); border:none; color:white;
+    width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px;
+    display:flex; align-items:center; justify-content:center; transition:background .2s; }
+  .theme-toggle:active { background:rgba(255,255,255,.35); }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position:fixed; bottom:0; left:0; right:0; background:white;
+    border-top:1px solid var(--border); display:flex; z-index:100; box-shadow:0 -4px 20px rgba(0,0,0,.06);
+  }
+  .nav-btn { flex:1; padding:10px 4px; display:flex; flex-direction:column;
+    align-items:center; gap:2px; cursor:pointer; color:var(--muted);
+    transition:color .2s; border:none; background:none; }
+  .nav-btn.active { color:var(--primary); }
+  .nav-btn .icon { font-size:22px; }
+  .nav-btn .lbl  { font-size:9px; font-weight:700; text-transform:uppercase; }
+
+  /* ── PAGES ── */
+  .page { display:none; padding:12px 12px 80px; max-width:500px; margin:0 auto; }
+  .page.active { display:block; animation:fadeIn .25s; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+  /* ── CARDS ── */
+  .card { background:var(--card); border:1px solid var(--border); border-radius:18px;
+    padding:16px; margin-bottom:12px; box-shadow:0 2px 10px rgba(0,0,0,.04); }
+  .card-title { font-size:11px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.8px; color:var(--muted); margin-bottom:12px; }
+
+  /* ── PARTNER CARD ── */
+  .partner-card {
+    background:var(--grad); color:white; border-radius:20px; padding:18px;
+    margin-bottom:12px; position:relative; overflow:hidden;
+  }
+  .partner-card::after {
+    content:'💖'; position:absolute; right:-10px; top:-10px; font-size:80px; opacity:.1;
+  }
+  .partner-top { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .partner-avatar { width:48px; height:48px; border-radius:50%;
+    background:rgba(255,255,255,.25); display:flex; align-items:center;
+    justify-content:center; font-size:26px; flex-shrink:0; }
+  .partner-name { font-size:16px; font-weight:800; }
+  .partner-city { font-size:12px; opacity:.8; }
+  .partner-mood-big { font-size:32px; }
+  .partner-bottom { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  .poke-btn { padding:7px 14px; background:rgba(255,255,255,.2); border:none;
+    border-radius:20px; color:white; font-size:13px; font-weight:700; cursor:pointer;
+    transition:background .2s; }
+  .poke-btn:active { background:rgba(255,255,255,.35); }
+  .days-together { font-size:13px; opacity:.85; }
+
+  /* ── WEATHER ── */
+  .weather-strip { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+  .weather-cell { background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:12px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+  .wt-who  { font-size:10px; font-weight:700; color:var(--muted); margin-bottom:4px; }
+  .wt-temp { font-size:24px; font-weight:800; background:var(--grad);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .wt-city { font-size:11px; color:var(--muted); margin-top:2px; }
+
+  /* ── COUNTDOWN ── */
+  .countdown-card { background: linear-gradient(135deg,#a1c4fd,#c2e9fb);
+    border-radius:18px; padding:16px; text-align:center; margin-bottom:12px; }
+  .countdown-days { font-size:36px; font-weight:900; color:#1a5f7a; line-height:1; }
+  .countdown-sub  { font-size:12px; color:#2a7090; margin-top:4px; }
+
+  /* ── TOUCH BUTTON ── */
+  .touch-wrap { text-align:center; padding:8px 0; }
+  .touch-btn {
+    width:110px; height:110px; border-radius:50%;
+    background:radial-gradient(circle,#ffb6c1,#ff69b4);
+    border:none; font-size:44px; cursor:pointer;
+    box-shadow:0 0 24px rgba(255,105,180,.4);
+    transition:transform .1s,box-shadow .1s;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .touch-btn:active { transform:scale(.88); box-shadow:0 0 40px rgba(255,105,180,.7); }
+  .touch-hint { font-size:11px; color:var(--muted); margin-top:8px; }
+  .touch-status { font-size:13px; font-weight:600; color:var(--primary); height:20px; margin-bottom:6px; }
+
+  /* ── MOOD ── */
+  .mood-grid { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:8px 0; }
+  .mood-opt  { font-size:28px; cursor:pointer; border-radius:12px; padding:6px 8px;
+    transition:background .15s,transform .15s; border:2px solid transparent; }
+  .mood-opt.sel { background:rgba(139,92,246,.12); border-color:var(--primary); transform:scale(1.15); }
+  .mood-opt:active { transform:scale(.9); }
+  .mood-comment { width:100%; padding:10px; border:1px solid var(--border); border-radius:10px;
+    font-family:inherit; font-size:14px; outline:none; margin-top:8px; resize:none; }
+  .mood-comment:focus { border-color:var(--primary); }
+
+  /* ── BUTTONS ── */
+  .btn { padding:12px; border:none; border-radius:12px; font-weight:700; font-size:13px;
+    cursor:pointer; transition:opacity .15s,transform .1s; width:100%; margin-top:8px; }
+  .btn:active { opacity:.75; transform:scale(.97); }
+  .btn-primary { background:var(--grad); color:white; }
+  .btn-secondary { background:#f0f0f8; color:var(--text); }
+  .btn-danger  { background:#fef2f2; color:var(--red); border:1px solid #fecaca; }
+  .btn-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .btn-grid-2 .btn { margin-top:0; }
+
+  /* ── INPUTS ── */
+  .field { width:100%; padding:11px 14px; border:1px solid var(--border); border-radius:12px;
+    font-family:inherit; font-size:14px; outline:none; transition:border-color .2s; background:white; }
+  .field:focus { border-color:var(--primary); }
+  .field-row { display:flex; gap:8px; }
+  .field-row .field { flex:1; }
+  .field-row .btn  { width:auto; flex-shrink:0; margin-top:0; padding:11px 16px; }
+  label { font-size:12px; font-weight:700; color:var(--muted); display:block; margin-bottom:6px; }
+  select.field { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239090a8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; }
+
+  /* ── ITEM ROWS ── */
+  .item-row { display:flex; align-items:center; gap:10px; padding:10px 0;
+    border-bottom:1px solid var(--border); }
+  .item-row:last-child { border-bottom:none; }
+  .item-check { width:22px; height:22px; border-radius:8px; border:2px solid var(--border);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;
+    transition:all .2s; }
+  .item-check.done { background:var(--green); border-color:var(--green); color:white; font-size:12px; }
+  .item-body { flex:1; min-width:0; }
+  .item-title { font-size:14px; font-weight:600; }
+  .item-title.done { text-decoration:line-through; color:var(--muted); }
+  .item-sub  { font-size:11px; color:var(--muted); margin-top:1px; }
+  .item-del  { color:var(--red); font-size:18px; cursor:pointer; padding:4px; opacity:.5; }
+  .item-del:active { opacity:1; }
+
+  /* ── TIMER CARDS ── */
+  .timer-card { background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:14px; margin-bottom:10px; display:flex; align-items:center; gap:12px; }
+  .timer-days { min-width:54px; height:54px; border-radius:14px; background:rgba(139,92,246,.1);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+  .timer-num  { font-size:20px; font-weight:900; color:var(--primary); line-height:1; }
+  .timer-unit { font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; }
+  .timer-info { flex:1; }
+  .timer-name { font-size:14px; font-weight:700; }
+  .timer-date { font-size:11px; color:var(--muted); margin-top:2px; }
+
+  /* ── NOTES ── */
+  .note-card { background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:14px; margin-bottom:10px; }
+  .note-card .note-text { font-size:14px; line-height:1.5; }
+  .note-card .note-meta { font-size:11px; color:var(--muted); margin-top:8px; }
+  .note-arrow { font-size:14px; color:var(--primary); }
+
+  /* ── SUB TABS ── */
+  .sub-tabs { display:flex; gap:6px; margin-bottom:14px; }
+  .sub-tab { flex:1; padding:8px; border:1.5px solid var(--border); border-radius:10px;
+    background:white; font-size:12px; font-weight:700; cursor:pointer; color:var(--muted);
+    transition:all .15s; }
+  .sub-tab.active { background:var(--primary); border-color:var(--primary); color:white; }
+
+  /* ── SHOP ── */
+  .shop-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .shop-item { background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+    padding:14px 10px; text-align:center; cursor:pointer; transition:all .15s; }
+  .shop-item:active { transform:scale(.95); border-color:var(--primary); }
+  .shop-emoji { font-size:34px; margin-bottom:6px; }
+  .shop-name  { font-size:12px; font-weight:700; margin-bottom:4px; }
+  .shop-price { font-size:12px; font-weight:800; color:#f59e0b; }
+
+  /* ── CAT PILLS ── */
+  .pill-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .pill { padding:5px 12px; border-radius:20px; font-size:12px; font-weight:700;
+    cursor:pointer; border:1.5px solid var(--border); color:var(--muted); background:white; }
+  .pill.active { background:var(--primary); color:white; border-color:var(--primary); }
+
+  /* ── SECTION DIVIDER ── */
+  .section-title { font-size:12px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.8px; color:var(--muted); margin:16px 0 10px 2px; }
+
+  /* ── PROFILE ── */
+  .profile-header { text-align:center; padding:16px 0 8px; }
+  .profile-ava { width:64px; height:64px; border-radius:50%; background:var(--grad);
+    margin:0 auto 10px; display:flex; align-items:center; justify-content:center;
+    font-size:30px; }
+  .profile-name { font-size:18px; font-weight:800; }
+  .profile-handle { font-size:13px; color:var(--muted); }
+
+  /* ── ANSWER BOXES ── */
+  .answer-box { padding:12px; border-radius:12px; margin-bottom:10px; }
+  .answer-me  { background:#f0edff; }
+  .answer-partner { background:#fff0f8; }
+  .answer-label { font-size:10px; font-weight:800; text-transform:uppercase; margin-bottom:4px; }
+  .answer-me .answer-label  { color:var(--primary); }
+  .answer-partner .answer-label { color:var(--primary2); }
+
+  /* ── BADGE ── */
+  .badge { display:inline-block; padding:3px 10px; border-radius:20px;
+    font-size:11px; font-weight:700; }
+  .badge-green { background:#dcfce7; color:#166534; }
+  .badge-gray  { background:#f3f4f6; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <h1>💑 Couple App</h1>
+  <div class="top-bar-right">
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙</button>
+    <div class="coins-badge" id="coins-bal">🪙 0</div>
+  </div>
+</div>
+
+<!-- PAGES -->
+
+<!-- ══ HOME ══ -->
+<div id="page-home" class="page active">
+
+  <div class="weather-strip">
+    <div class="weather-cell">
+      <div class="wt-who">Я</div>
+      <div class="wt-temp" id="my-temp">--°</div>
+      <div class="wt-city" id="my-city">...</div>
+    </div>
+    <div class="weather-cell">
+      <div class="wt-who">Половинка</div>
+      <div class="wt-temp" id="pt-temp">--°</div>
+      <div class="wt-city" id="pt-city">...</div>
+    </div>
+  </div>
+
+  <div id="partner-block" style="display:none">
+    <div class="partner-card">
+      <div class="partner-top">
+        <div class="partner-avatar" id="pt-mood-big">😊</div>
+        <div>
+          <div class="partner-name" id="pt-name">Половинка</div>
+          <div class="partner-city" id="pt-mood-comment">Я почуваюсь добре</div>
+        </div>
+      </div>
+      <div class="partner-bottom">
+        <div class="days-together" id="days-together"></div>
+        <div style="display:flex;gap:8px">
+          <button class="poke-btn" onclick="sendPoke('hug')">🤗 Обійняти</button>
+          <button class="poke-btn" onclick="sendPoke('kiss')">💋 Цьом</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="meeting-block" style="display:none" class="countdown-card">
+    <div style="font-size:12px;color:#2a7090;margin-bottom:4px">✈️ До нашої зустрічі</div>
+    <div class="countdown-days" id="meeting-days">0</div>
+    <div class="countdown-sub">днів</div>
+  </div>
+
+  <!-- DIGITAL TOUCH -->
+  <div class="card">
+    <div class="touch-status" id="touch-status"></div>
+    <div class="touch-wrap">
+      <button class="touch-btn" onmousedown="sendTouch()" ontouchstart="sendTouch()">💖</button>
+      <div class="touch-hint">Утримуй, щоб партнер відчув дотик</div>
+    </div>
+  </div>
+
+  <!-- MOOD -->
+  <div class="card">
+    <div class="card-title">🎭 Мій настрій</div>
+    <div class="mood-grid" id="mood-grid"></div>
+    <textarea class="mood-comment" id="mood-comment" placeholder="Як ти почуваєшся? (опціонально)" rows="2"></textarea>
+    <button class="btn btn-primary" onclick="updateMood()">Зберегти настрій</button>
+  </div>
+</div>
+
+<!-- ══ LISTS ══ -->
+<div id="page-lists" class="page">
+
+  <div class="card">
+    <div class="card-title">➕ Нове завдання</div>
+    <div class="field-row" style="margin-bottom:8px">
+      <select class="field" id="todo-cat" style="flex:0 0 auto;width:auto">
+        <option value="Завдання">📝</option>
+        <option value="Фільми">🎬</option>
+        <option value="Місця">📍</option>
+        <option value="Покупки">🛒</option>
+      </select>
+      <input class="field" type="text" id="todo-title" placeholder="Назва завдання...">
+      <button class="btn btn-primary" onclick="addTodo()">+</button>
+    </div>
+  </div>
+
+  <div class="pill-row" id="cat-pills">
+    <button class="pill active" onclick="filterCat(this,'Всі')">Всі</button>
+    <button class="pill" onclick="filterCat(this,'Завдання')">📝</button>
+    <button class="pill" onclick="filterCat(this,'Фільми')">🎬</button>
+    <button class="pill" onclick="filterCat(this,'Місця')">📍</button>
+    <button class="pill" onclick="filterCat(this,'Покупки')">🛒</button>
+  </div>
+
+  <div class="card" id="todos-list">
+    <div style="text-align:center;color:var(--muted);font-size:13px;padding:20px">Завантаження...</div>
+  </div>
+</div>
+
+<!-- ══ TIMERS ══ -->
+<div id="page-timers" class="page">
+  <div class="card">
+    <div class="card-title">⏳ Новий таймер</div>
+    <div style="margin-bottom:8px">
+      <input class="field" type="text" id="timer-event" placeholder="Назва події..." style="margin-bottom:8px">
+      <input class="field" type="date" id="timer-date">
+    </div>
+    <button class="btn btn-primary" onclick="addTimer()">Запустити таймер</button>
+  </div>
+  <div id="timers-list"></div>
+</div>
+
+<!-- ══ NOTES ══ -->
+<div id="page-notes" class="page">
+  <div class="sub-tabs">
+    <button class="sub-tab active" id="tab-reg" onclick="switchNoteTab('regular')">💝 Записки</button>
+    <button class="sub-tab" id="tab-ow"  onclick="switchNoteTab('openwhen')">🔒 Відкрий, коли...</button>
+    <button class="sub-tab" id="tab-q"   onclick="switchNoteTab('question')">❓ Питання дня</button>
+  </div>
+
+  <!-- REGULAR NOTES -->
+  <div id="sec-regular">
+    <div class="card">
+      <textarea class="field" id="note-text" placeholder="Напиши щось ніжне... 💕" rows="3" style="resize:none"></textarea>
+      <button class="btn btn-primary" onclick="addNote()">Надіслати записку</button>
+    </div>
+    <div id="notes-list"></div>
+  </div>
+
+  <!-- OPEN WHEN -->
+  <div id="sec-openwhen" style="display:none">
+    <div class="card">
+      <label>Тип повідомлення</label>
+      <select class="field" id="ow-cat" style="margin-bottom:8px" onchange="owCatChange()">
+        <option value="Sad">Тобі сумно 🥺</option>
+        <option value="Miss">Сумуєш за мною 🫂</option>
+        <option value="Date">В певну дату 📅</option>
+      </select>
+      <input type="date" id="ow-date" class="field" style="margin-bottom:8px;display:none">
+      <textarea class="field" id="ow-text" placeholder="Твоє таємне послання..." rows="3" style="resize:none"></textarea>
+      <button class="btn btn-primary" onclick="addOpenWhen()">Надіслати 🔒</button>
+    </div>
+    <div class="sub-tabs" style="margin-top:4px">
+      <button class="sub-tab active" id="ow-tab-r" onclick="switchOWList('received')">📥 Отримані</button>
+      <button class="sub-tab" id="ow-tab-s" onclick="switchOWList('sent')">📤 Відправлені</button>
+    </div>
+    <div id="ow-received"></div>
+    <div id="ow-sent" style="display:none"></div>
+  </div>
+
+  <!-- DAILY QUESTION -->
+  <div id="sec-question" style="display:none">
+    <div class="card" style="text-align:center">
+      <div id="q-text" style="font-size:16px;font-weight:700;margin:8px 0 16px;line-height:1.4">Завантаження...</div>
+      <div id="q-form">
+        <textarea class="field" id="q-answer" placeholder="Твоя відповідь..." rows="3" style="resize:none;text-align:left"></textarea>
+        <button class="btn btn-primary" onclick="submitAnswer()">Відповісти (+10 🪙)</button>
+      </div>
+      <div id="q-wait" style="display:none;padding:16px;color:var(--muted);font-size:13px">⏳ Чекаємо на відповідь...</div>
+      <div id="q-both" style="display:none;text-align:left"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHOP ══ -->
+<div id="page-shop" class="page">
+  <div class="card">
+    <div class="card-title">💝 Любовна крамниця</div>
+    <div class="shop-grid">
+      <div class="shop-item" onclick="buyItem('Вечеря по відеозв\'язку',50)">
+        <div class="shop-emoji">🍕</div>
+        <div class="shop-name">Вечеря по відео</div>
+        <div class="shop-price">🪙 50</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('Масаж (по приїзду)',100)">
+        <div class="shop-emoji">💆</div>
+        <div class="shop-name">Масаж</div>
+        <div class="shop-price">🪙 100</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('Вибір фільму',30)">
+        <div class="shop-emoji">🎬</div>
+        <div class="shop-name">Вибір фільму</div>
+        <div class="shop-price">🪙 30</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('Виконання бажання',200)">
+        <div class="shop-emoji">🧞</div>
+        <div class="shop-name">Будь-яке бажання</div>
+        <div class="shop-price">🪙 200</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('Прогулянка разом',40)">
+        <div class="shop-emoji">🚶‍♂️</div>
+        <div class="shop-name">Прогулянка</div>
+        <div class="shop-price">🪙 40</div>
+      </div>
+      <div class="shop-item" onclick="buyItem('Спільний перегляд серіалу',25)">
+        <div class="shop-emoji">📺</div>
+        <div class="shop-name">Серіал разом</div>
+        <div class="shop-price">🪙 25</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">📥 Мої купони</div>
+  <div id="coupons-list">
+    <div style="text-align:center;color:var(--muted);font-size:13px;padding:20px">Завантаження...</div>
+  </div>
+</div>
+
+<!-- ══ PROFILE ══ -->
+<div id="page-profile" class="page">
+  <div class="profile-header">
+    <div class="profile-ava">👤</div>
+    <div class="profile-name" id="prof-name">—</div>
+    <div class="profile-handle" id="prof-handle">@—</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚙️ Налаштування</div>
+    <label>Місто</label>
+    <select class="field" id="prof-city" style="margin-bottom:10px">
+      <option value="Kyiv">Київ</option>
+      <option value="Odesa">Одеса</option>
+      <option value="Lviv">Львів</option>
+      <option value="Kharkiv">Харків</option>
+      <option value="Dnipro">Дніпро</option>
+      <option value="Zaporizhzhia">Запоріжжя</option>
+      <option value="Mykolaiv">Миколаїв</option>
+    </select>
+    <label>Дата річниці</label>
+    <input class="field" type="date" id="prof-ann" style="margin-bottom:10px">
+    <label>Наступна зустріч ✈️</label>
+    <input class="field" type="date" id="prof-visit" style="margin-bottom:10px">
+    <button class="btn btn-primary" onclick="saveProfile()">💾 Зберегти</button>
+  </div>
+
+  <div class="card" id="prof-stats-card">
+    <div class="card-title">📊 Статистика</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
+      <div><div style="font-size:22px;font-weight:800;color:var(--primary)" id="st-todos">0</div><div style="font-size:10px;color:var(--muted)">Завдань</div></div>
+      <div><div style="font-size:22px;font-weight:800;color:var(--primary2)" id="st-notes">0</div><div style="font-size:10px;color:var(--muted)">Записок</div></div>
+      <div><div style="font-size:22px;font-weight:800;color:#f59e0b" id="st-coins">0</div><div style="font-size:10px;color:var(--muted)">Монет</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('home',this)">
+    <span class="icon">🏠</span><span class="lbl">Дім</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('lists',this)">
+    <span class="icon">📋</span><span class="lbl">Списки</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('timers',this)">
+    <span class="icon">⏳</span><span class="lbl">Таймери</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('notes',this)">
+    <span class="icon">💝</span><span class="lbl">Нотатки</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('shop',this)">
+    <span class="icon">🛍️</span><span class="lbl">Крамниця</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('profile',this)">
+    <span class="icon">👤</span><span class="lbl">Профіль</span>
+  </button>
+</div>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const urlParams = new URLSearchParams(window.location.search);
+const userInfo = tg?.initDataUnsafe?.user || { id: parseInt(urlParams.get('tg_user_id')) || 0, first_name: 'Гість', username: '' };
+const API = window.location.origin + '/api';
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+let _toastT;
+function toast(msg, good=true) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = good ? '#1a1a2e' : '#3a1010';
+  el.classList.add('show');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'home')    loadHome();
+  if (id === 'lists')   loadLists();
+  if (id === 'timers')  loadTimers();
+  if (id === 'notes')   { switchNoteTab(currentNoteTab); }
+  if (id === 'shop')    loadShop();
+  if (id === 'profile') loadProfile();
+}
+
+// ── HOME ──────────────────────────────────────────────────────────────────
+const MOODS = ['😊','😍','😎','🥰','😴','😔','😤','🤒','🎉','💪'];
+let selMood = '😊';
+
+function buildMoodGrid() {
+  const g = document.getElementById('mood-grid');
+  g.innerHTML = MOODS.map(m =>
+    `<span class="mood-opt${m===selMood?' sel':''}" onclick="pickMood('${m}')">${m}</span>`
+  ).join('');
+}
+
+function pickMood(m) {
+  selMood = m;
+  document.querySelectorAll('.mood-opt').forEach(el => {
+    el.classList.toggle('sel', el.textContent === m);
+  });
+}
+
+async function updateMood() {
+  const comment = document.getElementById('mood-comment').value.trim();
+  await fetch(`${API}/users/${userInfo.id}/update_full`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({mood: selMood, mood_comment: comment})
+  });
+  toast('✅ Настрій оновлено!');
+  tg?.HapticFeedback?.notificationOccurred('success');
+  loadHome();
+}
+
+async function loadHome() {
+  buildMoodGrid();
+  try {
+    const [meR, ptR] = await Promise.all([
+      fetch(`${API}/users/${userInfo.id}`),
+      fetch(`${API}/partner/${userInfo.id}`)
+    ]);
+    const me = await meR.json();
+    const pt = await ptR.json();
+
+    document.getElementById('coins-bal').textContent = `🪙 ${me.coins || 0}`;
+
+    if (me.mood) pickMood(me.mood);
+    if (me.mood_comment) document.getElementById('mood-comment').value = me.mood_comment;
+
+    if (me.city) loadWeather(me.city, 'my-temp', 'my-city');
+
+    if (pt?.user_id) {
+      document.getElementById('partner-block').style.display = 'block';
+      document.getElementById('pt-name').textContent = pt.full_name || ('@' + pt.username);
+      document.getElementById('pt-mood-big').textContent = pt.mood || '😊';
+      document.getElementById('pt-mood-comment').textContent = pt.mood_comment || '';
+      if (pt.city) loadWeather(pt.city, 'pt-temp', 'pt-city');
+
+      if (me.anniversary_date) {
+        const d = Math.floor((new Date() - new Date(me.anniversary_date)) / 86400000);
+        if (d >= 0) document.getElementById('days-together').textContent = `💕 Разом ${d} днів`;
+      }
+
+      const vDate = pt.next_visit_date || me.next_visit_date;
+      if (vDate) {
+        const d = Math.ceil((new Date(vDate) - new Date()) / 86400000);
+        if (d >= 0) {
+          document.getElementById('meeting-block').style.display = 'block';
+          document.getElementById('meeting-days').textContent = d;
+        }
+      }
+    }
+  } catch(e) { console.error(e); }
+}
+
+async function loadWeather(city, tempId, cityId) {
+  try {
+    const r = await fetch(`${API}/weather/${city}`);
+    const d = await r.json();
+    document.getElementById(tempId).textContent = Math.round(d.temp) + '°';
+    document.getElementById(cityId).textContent = d.city;
+  } catch {}
+}
+
+// TOUCH
+async function sendTouch() {
+  tg?.HapticFeedback?.impactOccurred('medium');
+  await fetch(`${API}/touch/send`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userInfo.id})
+  });
+  document.getElementById('touch-status').textContent = '💫 Дотик надіслано!';
+  setTimeout(() => { document.getElementById('touch-status').textContent = ''; }, 2000);
+}
+
+async function checkTouch() {
+  try {
+    const r = await fetch(`${API}/touch/check/${userInfo.id}`);
+    const d = await r.json();
+    const el = document.getElementById('touch-status');
+    if (d.is_touching) {
+      el.textContent = '💓 ПАРТНЕР ТОРКАЄТЬСЯ!';
+      el.style.color = '#ec4899';
+      tg?.HapticFeedback?.notificationOccurred('success');
+    } else if (el.textContent === '💓 ПАРТНЕР ТОРКАЄТЬСЯ!') {
+      el.textContent = '';
+      el.style.color = 'var(--primary)';
+    }
+  } catch {}
+}
+
+async function sendPoke(type) {
+  await fetch(`${API}/poke`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userInfo.id, type})
+  });
+  tg?.HapticFeedback?.impactOccurred('light');
+  toast(type === 'hug' ? '🤗 Обійми надіслано!' : '💋 Поцілунок надіслано!');
+}
+
+// ── LISTS ─────────────────────────────────────────────────────────────────
+let allTodos = [], curCat = 'Всі';
+
+async function loadLists() {
+  const r = await fetch(`${API}/todos/${userInfo.id}`);
+  allTodos = await r.json();
+  renderTodos();
+}
+
+function filterCat(btn, cat) {
+  curCat = cat;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderTodos();
+}
+
+const CAT_COLOR = { 'Завдання':'#8b5cf6','Фільми':'#ec4899','Місця':'#f59e0b','Покупки':'#22c55e' };
+const CAT_ICON  = { 'Завдання':'📝','Фільми':'🎬','Місця':'📍','Покупки':'🛒' };
+
+function renderTodos() {
+  const list = curCat === 'Всі' ? allTodos : allTodos.filter(t => t.category === curCat);
+  const el = document.getElementById('todos-list');
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">Список порожній</div>';
+    return;
+  }
+  el.innerHTML = list.map(t => `
+    <div class="item-row">
+      <div class="item-check ${t.done?'done':''}" onclick="toggleTodo(${t.id})">
+        ${t.done ? '✓' : ''}
+      </div>
+      <div class="item-body">
+        <div class="item-title ${t.done?'done':''}">${t.title}</div>
+        <div class="item-sub">${CAT_ICON[t.category]||''} ${t.category}</div>
+      </div>
+      <span class="item-del" onclick="deleteTodo(${t.id})">×</span>
+    </div>`).join('');
+}
+
+async function addTodo() {
+  const title = document.getElementById('todo-title').value.trim();
+  const category = document.getElementById('todo-cat').value;
+  if (!title) return;
+  await fetch(`${API}/todos/add`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userInfo.id, title, category, notes:''})
+  });
+  document.getElementById('todo-title').value = '';
+  tg?.HapticFeedback?.impactOccurred('light');
+  loadLists();
+}
+
+async function toggleTodo(id) {
+  await fetch(`${API}/todos/${userInfo.id}/${id}/toggle`, {method:'POST'});
+  loadLists();
+}
+
+async function deleteTodo(id) {
+  await fetch(`${API}/todos/${userInfo.id}/${id}`, {method:'DELETE'});
+  loadLists();
+}
+
+document.getElementById('todo-title').addEventListener('keydown', e => { if(e.key==='Enter') addTodo(); });
+
+// ── TIMERS ────────────────────────────────────────────────────────────────
+async function loadTimers() {
+  const r = await fetch(`${API}/timers/${userInfo.id}`);
+  const timers = await r.json();
+  const el = document.getElementById('timers-list');
+  if (!timers.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">Немає таймерів</div>';
+    return;
+  }
+  el.innerHTML = timers.map(t => {
+    const done = t.days_left <= 0;
+    return `<div class="timer-card">
+      <div class="timer-days" style="${done ? 'background:rgba(34,197,94,.1)' : ''}">
+        <div class="timer-num" style="${done ? 'color:var(--green)' : ''}">${done ? '🎉' : t.days_left}</div>
+        ${done ? '' : '<div class="timer-unit">днів</div>'}
+      </div>
+      <div class="timer-info">
+        <div class="timer-name">${t.event}</div>
+        <div class="timer-date">${t.target_date}</div>
+      </div>
+      <span class="item-del" onclick="deleteTimer(${t.id})">×</span>
+    </div>`;
+  }).join('');
+}
+
+async function addTimer() {
+  const event = document.getElementById('timer-event').value.trim();
+  const target_date = document.getElementById('timer-date').value;
+  if (!event || !target_date) return;
+  await fetch(`${API}/timers/add`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userInfo.id, event, target_date})
+  });
+  document.getElementById('timer-event').value = '';
+  document.getElementById('timer-date').value = '';
+  loadTimers();
+}
+
+async function deleteTimer(id) {
+  await fetch(`${API}/timers/${userInfo.id}/${id}`, {method:'DELETE'});
+  loadTimers();
+}
+
+// ── NOTES ─────────────────────────────────────────────────────────────────
+let currentNoteTab = 'regular', currentQuestion = null;
+
+function switchNoteTab(tab) {
+  currentNoteTab = tab;
+  ['regular','openwhen','question'].forEach(t => {
+    document.getElementById('sec-' + t).style.display = t === tab ? 'block' : 'none';
+    document.getElementById('tab-' + t.charAt(0)).classList.toggle('active', t === tab);
+  });
+  if (tab === 'regular')  loadNotes();
+  if (tab === 'openwhen') loadOpenWhen('received');
+  if (tab === 'question') loadQuestion();
+}
+
+function switchOWList(which) {
+  document.getElementById('ow-received').style.display = which==='received' ? 'block' : 'none';
+  document.getElementById('ow-sent').style.display     = which==='sent'     ? 'block' : 'none';
+  document.getElementById('ow-tab-r').classList.toggle('active', which==='received');
+  document.getElementById('ow-tab-s').classList.toggle('active', which==='sent');
+  loadOpenWhen(which);
+}
+
+function owCatChange() {
+  const v = document.getElementById('ow-cat').value;
+  document.getElementById('ow-date').style.display = v === 'Date' ? 'block' : 'none';
+}
+
+async function loadNotes() {
+  const r = await fetch(`${API}/notes/${userInfo.id}`);
+  const notes = await r.json();
+  const el = document.getElementById('notes-list');
+  el.innerHTML = notes.length ? notes.map(n => `
+    <div class="note-card">
+      <div class="note-text">${n.text}</div>
+      <div class="note-meta">${n.created_at || ''}</div>
+    </div>`).join('') : '<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">Нотаток ще немає</div>';
+}
+
+async function addNote() {
+  const text = document.getElementById('note-text').value.trim();
+  if (!text) return;
+  await fetch(`${API}/notes/add`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userInfo.id, text})
+  });
+  document.getElementById('note-text').value = '';
+  loadNotes();
+  toast('💝 Записку збережено!');
+}
+
+async function addOpenWhen() {
+  const category = document.getElementById('ow-cat').value;
+  const text = document.getElementById('ow-text').value.trim();
+  const unlock_date = document.getElementById('ow-date').value;
+  if (!text) return;
+  await fetch(`${API}/open_when/add`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userInfo.id, category, text, unlock_date})
+  });
+  document.getElementById('ow-text').value = '';
+  toast('🔒 Таємне послання збережено!');
+}
+
+async function loadOpenWhen(which) {
+  try {
+    const r = await fetch(`${API}/open_when/${userInfo.id}/${which}`);
+    const items = await r.json();
+    const el = document.getElementById(`ow-${which}`);
+    el.innerHTML = items.length ? items.map(i => `
+      <div class="note-card">
+        <div style="font-size:11px;font-weight:800;color:var(--primary);margin-bottom:4px">${i.category}</div>
+        <div class="note-text">${i.is_opened ? i.content : '🔒 Ще не відкрито'}</div>
+        ${i.unlock_date ? `<div class="note-meta">📅 ${i.unlock_date}</div>` : ''}
+      </div>`).join('') : '<div style="text-align:center;color:var(--muted);padding:16px;font-size:13px">Немає повідомлень</div>';
+  } catch {}
+}
+
+async function loadQuestion() {
+  try {
+    const qR = await fetch(`${API}/daily_question`);
+    currentQuestion = await qR.json();
+    document.getElementById('q-text').textContent = currentQuestion.question;
+    const aR = await fetch(`${API}/daily_answers/${userInfo.id}/${currentQuestion.id}`);
+    const ans = await aR.json();
+    if (ans.both_answered) {
+      document.getElementById('q-form').style.display = 'none';
+      document.getElementById('q-wait').style.display = 'none';
+      document.getElementById('q-both').style.display = 'block';
+      document.getElementById('q-both').innerHTML = `
+        <div class="answer-box answer-me">
+          <div class="answer-label">Я:</div>
+          <div>${ans.my_answer.answer}</div>
+        </div>
+        <div class="answer-box answer-partner">
+          <div class="answer-label">Партнер:</div>
+          <div>${ans.partner_answer.answer}</div>
+        </div>`;
+    } else if (ans.my_answer) {
+      document.getElementById('q-form').style.display = 'none';
+      document.getElementById('q-wait').style.display = 'block';
+    }
+  } catch {}
+}
+
+async function submitAnswer() {
+  const answer = document.getElementById('q-answer').value.trim();
+  if (!answer || !currentQuestion) return;
+  await fetch(`${API}/daily_answers/add`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userInfo.id, question_id: currentQuestion.id, answer})
+  });
+  document.getElementById('q-answer').value = '';
+  loadQuestion();
+  loadHome();
+  toast('✅ Відповідь збережено! +10 🪙');
+}
+
+// ── SHOP ──────────────────────────────────────────────────────────────────
+async function loadShop() {
+  const [balR, couR] = await Promise.all([
+    fetch(`${API}/users/${userInfo.id}`),
+    fetch(`${API}/shop/my_coupons/${userInfo.id}`)
+  ]);
+  const bal = await balR.json();
+  const coupons = await couR.json();
+  document.getElementById('coins-bal').textContent = `🪙 ${bal.coins || 0}`;
+  document.getElementById('coupons-list').innerHTML = coupons.length ? coupons.map(c => `
+    <div class="card" style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:28px">🎁</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700">${c.title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.created_at}</div>
+      </div>
+      <span class="badge ${c.status==='available'?'badge-green':'badge-gray'}">${c.status==='available'?'Дійсний':'Використано'}</span>
+    </div>`).join('') : '<div class="card" style="text-align:center;color:var(--muted);padding:20px;font-size:13px">Купонів ще немає</div>';
+}
+
+async function buyItem(title, price) {
+  const r = await fetch(`${API}/shop/buy`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userInfo.id, title, price})
+  });
+  const d = await r.json();
+  if (d.error) { toast('❌ Недостатньо монет!', false); tg?.HapticFeedback?.notificationOccurred('error'); }
+  else { toast('🎁 Купон надіслано партнеру!'); tg?.HapticFeedback?.notificationOccurred('success'); loadShop(); }
+}
+
+// ── PROFILE ───────────────────────────────────────────────────────────────
+async function loadProfile() {
+  try {
+    const r = await fetch(`${API}/users/${userInfo.id}`);
+    const d = await r.json();
+    document.getElementById('prof-name').textContent = userInfo.first_name + (userInfo.last_name ? ' '+userInfo.last_name : '');
+    document.getElementById('prof-handle').textContent = userInfo.username ? '@'+userInfo.username : `ID: ${userInfo.id}`;
+    if (d.city) document.getElementById('prof-city').value = d.city;
+    if (d.anniversary_date) document.getElementById('prof-ann').value = d.anniversary_date;
+    if (d.next_visit_date)  document.getElementById('prof-visit').value = d.next_visit_date;
+    document.getElementById('st-coins').textContent = d.coins || 0;
+
+    const todosR = await fetch(`${API}/todos/${userInfo.id}`);
+    const todos = await todosR.json();
+    document.getElementById('st-todos').textContent = todos.length;
+
+    const notesR = await fetch(`${API}/notes/${userInfo.id}`);
+    const notes = await notesR.json();
+    document.getElementById('st-notes').textContent = notes.length;
+  } catch {}
+}
+
+async function saveProfile() {
+  const city = document.getElementById('prof-city').value;
+  const anniversary_date = document.getElementById('prof-ann').value;
+  const next_visit_date  = document.getElementById('prof-visit').value;
+  await fetch(`${API}/users/${userInfo.id}/update_full`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({city, anniversary_date, next_visit_date})
+  });
+  toast('✅ Збережено!');
+  tg?.HapticFeedback?.notificationOccurred('success');
+  loadHome();
+}
+
+// ── THEME TOGGLE ──────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+
+  const btn = document.getElementById('theme-btn');
+  btn.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+
+  tg?.HapticFeedback?.impactOccurred('light');
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+}
+
+// ── ENHANCED ERROR HANDLING ───────────────────────────────────────────────
+window.addEventListener('error', (e) => {
+  console.error('Global error:', e.error);
+  toast('❌ Щось пішло не так', false);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Unhandled promise rejection:', e.reason);
+  toast('❌ Помилка з\'єднання', false);
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+initTheme();
+loadHome();
+setInterval(checkTouch, 3000);
+</script>
+</body>
+</html>

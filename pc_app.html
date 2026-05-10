@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>PC Remote</title>
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --bg2: #16161a;
+    --bg3: #1e1e24;
+    --border: #2a2a35;
+    --accent: #7c6fe0;
+    --accent2: #00c9a7;
+    --red: #e05555;
+    --yellow: #e0b855;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --card-r: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #222; color: #fff; padding: 10px 20px; border-radius: 30px;
+    font-size: 13px; opacity: 0; transition: all .3s; pointer-events: none; z-index: 999; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── LAYOUT ── */
+  .page { display: none; padding: 12px 12px 80px; max-width: 500px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ── HEADER ── */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: var(--bg2); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .top-bar .logo { font-size: 15px; font-weight: 700; color: var(--accent); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); display: inline-block; margin-right: 6px; box-shadow: 0 0 6px var(--accent2); }
+  .top-bar .right { font-size: 12px; color: var(--muted); }
+  #uptime-val { color: var(--accent2); font-weight: 600; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2);
+    border-top: 1px solid var(--border); display: flex; z-index: 100;
+    max-width: 500px; margin: 0 auto;
+  }
+  .nav-item { flex: 1; padding: 10px 4px; display: flex; flex-direction: column;
+    align-items: center; gap: 3px; cursor: pointer; color: var(--muted); transition: color .2s; border: none; background: none; }
+  .nav-item.active { color: var(--accent); }
+  .nav-item span:first-child { font-size: 20px; }
+  .nav-item span:last-child { font-size: 9px; font-weight: 600; text-transform: uppercase; }
+
+  /* ── CARDS ── */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 16px; margin-bottom: 12px; }
+  .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 14px; }
+
+  /* ── STAT RINGS ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .stat-ring-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 14px 8px; text-align: center; }
+  .ring-svg { width: 64px; height: 64px; display: block; margin: 0 auto 6px; }
+  .ring-bg { fill: none; stroke: var(--bg3); stroke-width: 6; }
+  .ring-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset .6s ease; }
+  .ring-text { font-size: 13px; font-weight: 800; fill: var(--text); }
+  .ring-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+
+  /* ── BUTTONS ── */
+  .btn { padding: 12px 16px; border: none; border-radius: 12px; font-weight: 700; font-size: 13px;
+    cursor: pointer; transition: opacity .15s, transform .1s; color: white; width: 100%; margin-bottom: 8px; }
+  .btn:active { opacity: .75; transform: scale(.97); }
+  .btn-accent { background: var(--accent); }
+  .btn-teal  { background: var(--accent2); color: #000; }
+  .btn-red   { background: var(--red); }
+  .btn-yellow{ background: var(--yellow); color: #000; }
+  .btn-ghost { background: var(--bg3); border: 1px solid var(--border); color: var(--text); }
+  .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-grid .btn { margin-bottom: 0; }
+
+  /* ── INPUT ── */
+  .field { width: 100%; padding: 12px; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+    transition: border-color .2s; }
+  .field:focus { border-color: var(--accent); }
+  .field-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .field-row .field { flex: 1; }
+  .field-row .btn { width: auto; margin: 0; padding: 12px 16px; flex-shrink: 0; }
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; font-weight: 600; }
+
+  /* ── VOLUME ── */
+  .vol-row { display: flex; align-items: center; gap: 12px; }
+  .vol-icon { font-size: 22px; cursor: pointer; flex-shrink: 0; }
+  input[type=range] { flex: 1; -webkit-appearance: none; height: 6px; border-radius: 3px;
+    background: var(--bg3); outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px rgba(124,111,224,.6); }
+  .vol-val { font-size: 14px; font-weight: 700; min-width: 36px; text-align: right; color: var(--accent); }
+
+  /* ── CAMERA ── */
+  #video-wrap { border-radius: 10px; overflow: hidden; background: #000; margin-bottom: 10px; display: none; aspect-ratio: 4/3; }
+  #video-stream { width: 100%; display: block; }
+  .cam-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .cam-badge.live { background: rgba(224,85,85,.2); color: var(--red); }
+  .cam-badge.off  { background: var(--bg3); color: var(--muted); }
+  .motion-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .toggle-sw { position: relative; width: 48px; height: 26px; cursor: pointer; }
+  .toggle-sw input { display: none; }
+  .toggle-sw .slider { position: absolute; inset: 0; border-radius: 30px; background: var(--bg3); transition: .3s; }
+  .toggle-sw .slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px;
+    border-radius: 50%; background: var(--muted); transition: .3s; }
+  .toggle-sw input:checked + .slider { background: rgba(0,201,167,.2); }
+  .toggle-sw input:checked + .slider::before { transform: translateX(22px); background: var(--accent2); }
+
+  /* ── PROCESSES ── */
+  .proc-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .proc-row:last-child { border-bottom: none; }
+  .proc-name { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .proc-bar-wrap { width: 60px; height: 5px; background: var(--bg3); border-radius: 3px; }
+  .proc-bar { height: 5px; border-radius: 3px; background: var(--accent); transition: width .4s; }
+  .proc-pct { font-size: 11px; color: var(--muted); min-width: 36px; text-align: right; }
+
+  /* ── POWER ── */
+  .pwd-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .pwd-row .field { flex: 1; }
+
+  /* ── SECTION DIVIDER ── */
+  .divider { font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); margin: 16px 0 10px; padding-left: 4px; }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="logo">🖥 PC Remote</div>
+  <div class="right"><span class="status-dot" id="online-dot" style="background:var(--muted)"></span><span id="uptime-val">—</span></div>
+</div>
+
+<!-- PAGES -->
+<div id="page-stats" class="page active">
+  <div class="divider">Система</div>
+  <div class="stats-grid">
+    <div class="stat-ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 64 64">
+        <circle class="ring-bg" cx="32" cy="32" r="26"/>
+        <circle id="ring-cpu" class="ring-fill" cx="32" cy="32" r="26"
+          stroke="#7c6fe0" stroke-dasharray="163.4" stroke-dashoffset="163.4" transform="rotate(-90 32 32)"/>
+        <text id="ring-cpu-txt" class="ring-text" x="32" y="37" text-anchor="middle">0%</text>
+      </svg>
+      <div class="ring-label">CPU</div>
+    </div>
+    <div class="stat-ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 64 64">
+        <circle class="ring-bg" cx="32" cy="32" r="26"/>
+        <circle id="ring-ram" class="ring-fill" cx="32" cy="32" r="26"
+          stroke="#00c9a7" stroke-dasharray="163.4" stroke-dashoffset="163.4" transform="rotate(-90 32 32)"/>
+        <text id="ring-ram-txt" class="ring-text" x="32" y="37" text-anchor="middle">0%</text>
+      </svg>
+      <div class="ring-label">RAM</div>
+    </div>
+    <div class="stat-ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 64 64">
+        <circle class="ring-bg" cx="32" cy="32" r="26"/>
+        <circle id="ring-disk" class="ring-fill" cx="32" cy="32" r="26"
+          stroke="#e0b855" stroke-dasharray="163.4" stroke-dashoffset="163.4" transform="rotate(-90 32 32)"/>
+        <text id="ring-disk-txt" class="ring-text" x="32" y="37" text-anchor="middle">0%</text>
+      </svg>
+      <div class="ring-label">Диск</div>
+    </div>
+    <div class="stat-ring-wrap">
+      <svg class="ring-svg" viewBox="0 0 64 64">
+        <circle class="ring-bg" cx="32" cy="32" r="26"/>
+        <circle id="ring-temp" class="ring-fill" cx="32" cy="32" r="26"
+          stroke="#e05555" stroke-dasharray="163.4" stroke-dashoffset="163.4" transform="rotate(-90 32 32)"/>
+        <text id="ring-temp-txt" class="ring-text" x="32" y="37" text-anchor="middle">0°C</text>
+      </svg>
+      <div class="ring-label">Темп</div>
+    </div>
+  </div>
+
+  <div class="divider">📈 Історія використання (остання година)</div>
+  <div class="card">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;">CPU</div>
+    <canvas id="cpu-chart" style="width:100%;height:120px;"></canvas>
+  </div>
+
+  <div class="card">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;">RAM</div>
+    <canvas id="ram-chart" style="width:100%;height:120px;"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🌐 Мережа</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:center;">
+      <div><div style="font-size:18px;font-weight:800;color:var(--accent2)" id="net-recv">—</div><div style="font-size:10px;color:var(--muted)">↓ Отримано</div></div>
+      <div><div style="font-size:18px;font-weight:800;color:var(--accent)" id="net-sent">—</div><div style="font-size:10px;color:var(--muted)">↑ Відправлено</div></div>
+    </div>
+  </div>
+
+  <div class="divider">Процеси (топ CPU)</div>
+  <div class="card" id="proc-list"><div style="color:var(--muted);font-size:13px;text-align:center;padding:10px;">Завантаження...</div></div>
+</div>
+
+<div id="page-ctrl" class="page">
+  <div class="divider">🔊 Гучність</div>
+  <div class="card">
+    <div class="vol-row">
+      <span class="vol-icon" onclick="toggleMute()" id="vol-icon">🔊</span>
+      <input type="range" id="vol-slider" min="0" max="100" value="50" oninput="setVolume(this.value)">
+      <span class="vol-val" id="vol-val">50%</span>
+    </div>
+  </div>
+
+  <div class="divider">💡 Яскравість</div>
+  <div class="card">
+    <div class="vol-row">
+      <span style="font-size:22px;flex-shrink:0">☀️</span>
+      <input type="range" id="bright-slider" min="0" max="100" value="80" oninput="setBrightness(this.value)">
+      <span class="vol-val" id="bright-val">80%</span>
+    </div>
+  </div>
+
+  <div class="divider">⚡ Сценарії</div>
+  <div class="btn-grid" style="margin-bottom:12px">
+    <button class="btn btn-accent" onclick="runScenario('work')">👨‍💻 Робота</button>
+    <button class="btn btn-ghost" onclick="runScenario('sleep')">🌙 Сон</button>
+  </div>
+  <button class="btn btn-teal" style="margin-bottom:12px; color:black" onclick="launchAlbion()">⚔️ Albion Helper</button>
+
+  <div class="divider">🔒 Захист</div>
+  <div class="btn-grid">
+    <button class="btn btn-yellow" onclick="lockScreen()">🔒 Заблокувати</button>
+    <button class="btn btn-ghost" onclick="takeScreenshot()">📸 Скріншот</button>
+  </div>
+</div>
+
+<div id="page-cam" class="page">
+  <div class="divider">📷 Камера</div>
+  <div class="card">
+    <div id="video-wrap"><img id="video-stream" src="" alt=""></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <span class="cam-badge off" id="cam-badge">⚫ Вимкнено</span>
+    </div>
+    <button class="btn btn-accent" id="cam-btn" onclick="toggleCamera()">🎥 Увімкнути Live View</button>
+  </div>
+
+  <div class="divider">🚨 Виявлення руху</div>
+  <div class="card">
+    <div class="motion-row">
+      <div>
+        <div style="font-size:14px;font-weight:700">Моніторинг руху</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Сповіщення у Telegram при виявленні</div>
+      </div>
+      <label class="toggle-sw">
+        <input type="checkbox" id="motion-toggle" onchange="toggleMotion()">
+        <div class="slider"></div>
+      </label>
+    </div>
+  </div>
+</div>
+
+<div id="page-tools" class="page">
+  <div class="divider">🐧 Системні інструменти (Linux)</div>
+  <div class="card">
+    <div class="btn-grid">
+      <button class="btn btn-ghost" onclick="linuxAction('terminal')">💻 Термінал</button>
+      <button class="btn btn-ghost" onclick="linuxAction('bluetooth')">🔵 Bluetooth</button>
+      <button class="btn btn-ghost" style="grid-column: span 2;" onclick="linuxAction('trash')">🗑️ Очистити кошик</button>
+    </div>
+  </div>
+
+  <div class="divider">🎵 Медіа</div>
+  <div class="card">
+    <div class="btn-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+      <button class="btn btn-ghost" onclick="mediaAction('previous')">⏮</button>
+      <button class="btn btn-accent" onclick="mediaAction('play-pause')">⏯</button>
+      <button class="btn btn-ghost" onclick="mediaAction('next')">⏭</button>
+    </div>
+  </div>
+
+  <div class="divider">🌐 Відкрити посилання</div>
+  <div class="card">
+    <label>Відкрити сайт на ПК</label>
+    <div class="field-row">
+      <input class="field" type="url" id="open-url" placeholder="https://youtube.com">
+      <button class="btn btn-teal" onclick="openUrl()">🚀</button>
+    </div>
+  </div>
+
+  <div class="divider">📋 Буфер обміну</div>
+  <div class="card">
+    <label>Надіслати текст у буфер ПК</label>
+    <div class="field-row">
+      <input class="field" type="text" id="clip-text" placeholder="Текст...">
+      <button class="btn btn-accent" onclick="sendClipboard()">📋</button>
+    </div>
+  </div>
+
+  <div class="divider">🔔 Desktop-сповіщення</div>
+  <div class="card">
+    <label>Заголовок</label>
+    <input class="field" type="text" id="notif-title" placeholder="Заголовок" style="margin-bottom:8px">
+    <label>Текст</label>
+    <div class="field-row">
+      <input class="field" type="text" id="notif-body" placeholder="Повідомлення...">
+      <button class="btn btn-accent" onclick="sendNotify()">🔔</button>
+    </div>
+  </div>
+
+  <div class="divider">🔴 Живлення</div>
+  <div class="card">
+    <div class="btn-grid">
+      <button class="btn btn-red"    onclick="powerAction('shutdown')">🛑 Вимкнути</button>
+      <button class="btn btn-yellow" onclick="powerAction('reboot')">🔄 Перезавант.</button>
+    </div>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="powerAction('sleep')">😴 Сон</button>
+  </div>
+</div>
+
+<!-- PAGE: APPS & SCHEDULER -->
+<div id="page-apps" class="page">
+  <div class="divider">🚀 Улюблені програми</div>
+  <div class="card" id="fav-apps-list">
+    <div style="color:var(--muted);font-size:13px;text-align:center;padding:10px;">Завантаження...</div>
+  </div>
+
+  <div class="divider">⏰ Планувальник</div>
+  <div class="card">
+    <label>Тип задачі</label>
+    <select class="field" id="task-type" style="margin-bottom:8px">
+      <option value="shutdown">🛑 Вимкнути ПК</option>
+      <option value="reboot">🔄 Перезавантажити ПК</option>
+      <option value="launch_app">🚀 Запустити програму</option>
+    </select>
+
+    <div id="app-path-field" style="display:none;margin-bottom:8px;">
+      <label>Шлях до програми</label>
+      <input class="field" type="text" id="task-app-path" placeholder="firefox">
+    </div>
+
+    <label>Час виконання</label>
+    <input class="field" type="datetime-local" id="task-time" style="margin-bottom:8px">
+
+    <button class="btn btn-accent" onclick="addScheduledTask()">➕ Додати задачу</button>
+  </div>
+
+  <div class="divider">📋 Заплановані задачі</div>
+  <div class="card" id="scheduled-tasks-list">
+    <div style="color:var(--muted);font-size:13px;text-align:center;padding:10px;">Немає запланованих задач</div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-item active" onclick="showPage('stats',this)">
+    <span>📊</span><span>Стан</span>
+  </button>
+  <button class="nav-item" onclick="showPage('ctrl',this)">
+    <span>🎛️</span><span>Керування</span>
+  </button>
+  <button class="nav-item" onclick="showPage('apps',this)">
+    <span>🚀</span><span>Програми</span>
+  </button>
+  <button class="nav-item" onclick="showPage('cam',this)">
+    <span>📷</span><span>Камера</span>
+  </button>
+  <button class="nav-item" onclick="showPage('tools',this)">
+    <span>🛠️</span><span>Інструменти</span>
+  </button>
+</div>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const API = window.location.origin + '/api';
+
+// ── PASSWORD ──────────────────────────────────────────────────────────────
+let PWD = sessionStorage.getItem('pc_pwd') || '';
+if (PWD) document.getElementById('pwd-modal').style.display = 'none';
+
+function savePwd() {
+  const v = document.getElementById('modal-pwd').value;
+  if (!v) return;
+  PWD = v;
+  sessionStorage.setItem('pc_pwd', v);
+  document.getElementById('pwd-modal').style.display = 'none';
+  refreshAll();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg, color='#222') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = color;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+// ── APPS & SCHEDULER ──────────────────────────────────────────────────────
+
+async function loadFavoriteApps() {
+  try {
+    const r = await fetch(`${API}/pc/apps/favorites`);
+    const d = await r.json();
+    const list = document.getElementById('fav-apps-list');
+
+    if (d.apps && d.apps.length > 0) {
+      list.innerHTML = d.apps.map(app => `
+        <button class="btn btn-ghost" onclick="launchApp('${app.path}')" style="margin-bottom:8px;">
+          ${app.icon} ${app.name}
+        </button>
+      `).join('');
+    } else {
+      list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:10px;">Немає програм</div>';
+    }
+  } catch (e) {
+    console.error('Failed to load apps:', e);
+  }
+}
+
+async function launchApp(path) {
+  try {
+    const r = await fetch(`${API}/pc/apps/launch`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({path})
+    });
+    if (r.ok) toast(`🚀 Запущено: ${path}`);
+    else toast('❌ Помилка запуску');
+  } catch (e) {
+    toast('❌ Помилка з\'єднання');
+  }
+}
+
+async function loadScheduledTasks() {
+  try {
+    const r = await fetch(`${API}/pc/scheduler/tasks`);
+    const d = await r.json();
+    const list = document.getElementById('scheduled-tasks-list');
+
+    if (d.tasks && d.tasks.length > 0) {
+      list.innerHTML = d.tasks.map(task => {
+        const time = new Date(task.scheduled_time).toLocaleString('uk-UA');
+        const typeEmoji = task.type === 'shutdown' ? '🛑' : task.type === 'reboot' ? '🔄' : '🚀';
+        const typeName = task.type === 'shutdown' ? 'Вимкнення' : task.type === 'reboot' ? 'Перезавантаження' : 'Запуск';
+
+        return `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:700;">${typeEmoji} ${typeName}</div>
+              <div style="font-size:11px;color:var(--muted);">${time}</div>
+              ${task.app_path ? `<div style="font-size:11px;color:var(--muted);">Програма: ${task.app_path}</div>` : ''}
+            </div>
+            <button class="btn btn-danger" onclick="deleteScheduledTask('${task.id}')" style="padding:8px 12px;margin:0;">🗑️</button>
+          </div>
+        `;
+      }).join('');
+    } else {
+      list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:10px;">Немає запланованих задач</div>';
+    }
+  } catch (e) {
+    console.error('Failed to load tasks:', e);
+  }
+}
+
+async function addScheduledTask() {
+  try {
+    const type = document.getElementById('task-type').value;
+    const time = document.getElementById('task-time').value;
+    const appPath = document.getElementById('task-app-path').value;
+
+    if (!time) {
+      toast('❌ Вкажи час виконання');
+      return;
+    }
+
+    if (type === 'launch_app' && !appPath) {
+      toast('❌ Вкажи шлях до програми');
+      return;
+    }
+
+    const scheduledTime = new Date(time).toISOString();
+
+    const r = await fetch(`${API}/pc/scheduler/add`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        type,
+        scheduled_time: scheduledTime,
+        app_path: appPath,
+        recurring: false
+      })
+    });
+
+    if (r.ok) {
+      toast('✅ Задачу додано!');
+      document.getElementById('task-time').value = '';
+      document.getElementById('task-app-path').value = '';
+      loadScheduledTasks();
+    } else {
+      toast('❌ Помилка додавання');
+    }
+  } catch (e) {
+    toast('❌ Помилка з\'єднання');
+  }
+}
+
+async function deleteScheduledTask(taskId) {
+  try {
+    const r = await fetch(`${API}/pc/scheduler/delete/${taskId}`, {
+      method: 'DELETE'
+    });
+
+    if (r.ok) {
+      toast('🗑️ Задачу видалено');
+      loadScheduledTasks();
+    } else {
+      toast('❌ Помилка видалення');
+    }
+  } catch (e) {
+    toast('❌ Помилка з\'єднання');
+  }
+}
+
+// Показати/сховати поле шляху до програми
+document.addEventListener('DOMContentLoaded', () => {
+  const taskType = document.getElementById('task-type');
+  const appPathField = document.getElementById('app-path-field');
+
+  if (taskType && appPathField) {
+    taskType.addEventListener('change', () => {
+      appPathField.style.display = taskType.value === 'launch_app' ? 'block' : 'none';
+    });
+  }
+});
+
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'stats') { loadProcesses(); loadNetwork(); loadCharts(); }
+  if (id === 'ctrl')  loadVolume();
+  if (id === 'apps')  { loadFavoriteApps(); loadScheduledTasks(); }
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────
+const CIRCUM = 2 * Math.PI * 26;  // ≈163.4
+
+function setRing(id, pct) {
+  const el = document.getElementById('ring-' + id);
+  const txt = document.getElementById('ring-' + id + '-txt');
+  if (!el) return;
+  el.style.strokeDashoffset = CIRCUM - (pct / 100) * CIRCUM;
+  txt.textContent = pct + '%';
+}
+
+function setRingTemp(id, val) {
+  const el = document.getElementById('ring-' + id);
+  const txt = document.getElementById('ring-' + id + '-txt');
+  if (!el) return;
+  const pct = Math.min(Math.max(val, 0), 100);
+  el.style.strokeDashoffset = CIRCUM - (pct / 100) * CIRCUM;
+  txt.textContent = val + '°C';
+}
+
+// ── CHARTS ────────────────────────────────────────────────────────────────
+
+let cpuChart = null;
+let ramChart = null;
+
+function drawChart(canvasId, data, color, label) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width = canvas.offsetWidth * 2;
+  const height = canvas.height = 240;
+
+  ctx.clearRect(0, 0, width, height);
+
+  if (!data || data.length === 0) {
+    ctx.fillStyle = '#6b6b80';
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Немає даних', width / 2, height / 2);
+    return;
+  }
+
+  const padding = 40;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+
+  // Сітка
+  ctx.strokeStyle = '#2a2a35';
+  ctx.lineWidth = 2;
+  for (let i = 0; i <= 4; i++) {
+    const y = padding + (chartHeight / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(width - padding, y);
+    ctx.stroke();
+  }
+
+  // Мітки осі Y
+  ctx.fillStyle = '#6b6b80';
+  ctx.font = '20px sans-serif';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const y = padding + (chartHeight / 4) * i;
+    const value = 100 - (i * 25);
+    ctx.fillText(value + '%', padding - 10, y + 7);
+  }
+
+  // Лінія графіка
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+
+  const step = chartWidth / (data.length - 1 || 1);
+
+  data.forEach((value, i) => {
+    const x = padding + i * step;
+    const y = padding + chartHeight - (value / 100) * chartHeight;
+
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+
+  ctx.stroke();
+
+  // Заливка під лінією
+  ctx.lineTo(width - padding, padding + chartHeight);
+  ctx.lineTo(padding, padding + chartHeight);
+  ctx.closePath();
+  ctx.fillStyle = color + '20';
+  ctx.fill();
+}
+
+async function loadCharts() {
+  try {
+    const r = await fetch(`${API}/pc/stats/history`);
+    const d = await r.json();
+
+    if (d.success) {
+      drawChart('cpu-chart', d.cpu, '#7c6fe0', 'CPU');
+      drawChart('ram-chart', d.ram, '#00c9a7', 'RAM');
+    }
+  } catch (e) {
+    console.error('Failed to load charts:', e);
+  }
+}
+
+async function updateStats() {
+  try {
+    const r = await fetch(`${API}/pc/stats`);
+    const d = await r.json();
+    setRing('cpu',  Math.round(d.cpu));
+    setRing('ram',  Math.round(d.ram));
+    setRing('disk', Math.round(d.disk));
+    if (d.temp !== undefined) setRingTemp('temp', Math.round(d.temp));
+    document.getElementById('online-dot').style.background = 'var(--accent2)';
+    document.getElementById('online-dot').style.boxShadow = '0 0 6px var(--accent2)';
+  } catch {
+    document.getElementById('online-dot').style.background = 'var(--red)';
+    document.getElementById('online-dot').style.boxShadow = 'none';
+  }
+}
+
+async function loadUptime() {
+  try {
+    const r = await fetch(`${API}/pc/uptime`);
+    const d = await r.json();
+    document.getElementById('uptime-val').textContent = d.uptime;
+  } catch {}
+}
+
+async function loadNetwork() {
+  try {
+    const r = await fetch(`${API}/pc/network`);
+    const d = await r.json();
+    document.getElementById('net-recv').textContent = d.recv_mb + ' МБ';
+    document.getElementById('net-sent').textContent = d.sent_mb + ' МБ';
+  } catch {}
+}
+
+async function loadProcesses() {
+  try {
+    const r = await fetch(`${API}/pc/processes`);
+    const procs = await r.json();
+    const html = procs.map(p => `
+      <div class="proc-row">
+        <div class="proc-name" title="${p.name}">${p.name}</div>
+        <div class="proc-bar-wrap"><div class="proc-bar" style="width:${Math.min(p.cpu,100)}%"></div></div>
+        <div class="proc-pct">${p.cpu}% <span style="color:var(--accent2)">${p.mem}%</span></div>
+        <div style="cursor:pointer; color:var(--red); font-size:12px; margin-left:4px;" onclick="killProcess(${p.pid}, '${p.name}')">❌</div>
+      </div>`).join('');
+    document.getElementById('proc-list').innerHTML = html || '<div style="color:var(--muted);text-align:center;padding:10px;font-size:13px">Немає даних</div>';
+  } catch {}
+}
+
+async function killProcess(pid, name) {
+  if(!confirm(`Вбити процес ${name} (PID: ${pid})?`)) return;
+  const r = await fetch(`${API}/pc/process/kill`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({pid})
+  });
+  if (r.ok) {
+    toast('💀 Процес вбито');
+    loadProcesses();
+  } else {
+    toast('❌ Помилка', '#3a1a1a');
+  }
+}
+
+// ── VOLUME ────────────────────────────────────────────────────────────────
+let volDebounce;
+async function loadVolume() {
+  try {
+    const r = await fetch(`${API}/pc/volume`);
+    const d = await r.json();
+    const s = document.getElementById('vol-slider');
+    s.value = d.volume;
+    document.getElementById('vol-val').textContent = d.volume + '%';
+    document.getElementById('vol-icon').textContent = d.muted ? '🔇' : (d.volume > 50 ? '🔊' : '🔉');
+  } catch {}
+}
+
+function setVolume(v) {
+  document.getElementById('vol-val').textContent = v + '%';
+  document.getElementById('vol-icon').textContent = v > 50 ? '🔊' : (v > 0 ? '🔉' : '🔇');
+  clearTimeout(volDebounce);
+  volDebounce = setTimeout(async () => {
+    await fetch(`${API}/pc/volume`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({volume: +v}) });
+  }, 300);
+}
+
+async function toggleMute() {
+  await fetch(`${API}/pc/mute`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+  setTimeout(loadVolume, 300);
+}
+
+// ── BRIGHTNESS ────────────────────────────────────────────────────────────
+let brightDebounce;
+function setBrightness(v) {
+  document.getElementById('bright-val').textContent = v + '%';
+  clearTimeout(brightDebounce);
+  brightDebounce = setTimeout(async () => {
+    await fetch(`${API}/pc/brightness`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({value: +v}) });
+  }, 300);
+}
+
+// ── CAMERA ────────────────────────────────────────────────────────────────
+let camOn = false;
+function toggleCamera() {
+  const wrap = document.getElementById('video-wrap');
+  const img  = document.getElementById('video-stream');
+  const btn  = document.getElementById('cam-btn');
+  const badge = document.getElementById('cam-badge');
+  camOn = !camOn;
+  if (camOn) {
+    img.src = `${API}/pc/video_feed`;
+    wrap.style.display = 'block';
+    btn.textContent = '⏹ Вимкнути камеру';
+    badge.className = 'cam-badge live';
+    badge.textContent = '🔴 LIVE';
+  } else {
+    img.src = '';
+    wrap.style.display = 'none';
+    btn.textContent = '🎥 Увімкнути Live View';
+    badge.className = 'cam-badge off';
+    badge.textContent = '⚫ Вимкнено';
+  }
+}
+
+let motionOn = false;
+async function toggleMotion() {
+  const r = await fetch(`${API}/pc/motion/toggle`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+  const d = await r.json();
+  motionOn = d.motion_enabled;
+  document.getElementById('motion-toggle').checked = motionOn;
+  toast(motionOn ? '🚨 Моніторинг увімкнено' : '✅ Моніторинг вимкнено');
+}
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────
+async function takeScreenshot() {
+  const r = await fetch(`${API}/pc/screenshot`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: tg?.initDataUnsafe?.user?.id})
+  });
+  if (r.ok) toast('📸 Скріншот надіслано в Telegram', '#1a3a1a');
+  else toast('❌ Помилка скріншоту', '#3a1a1a');
+}
+
+async function lockScreen() {
+  await fetch(`${API}/pc/lock`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+  toast('🔒 Екран заблоковано');
+  tg?.HapticFeedback?.impactOccurred('medium');
+}
+
+async function runScenario(mode) {
+  await fetch(`${API}/pc/scenario`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({mode})
+  });
+  toast(mode === 'work' ? '👨‍💻 Режим Робота активовано' : '🌙 Екрани вимкнено');
+  tg?.HapticFeedback?.impactOccurred('medium');
+  setTimeout(loadVolume, 800);
+}
+
+async function launchAlbion() {
+  const r = await fetch(`${API}/pc/albion`, { method: 'POST' });
+  if (r.ok) toast('⚔️ Albion Helper запущено!');
+  else toast('❌ Помилка запуску');
+}
+
+async function powerAction(action) {
+  const labels = { shutdown: '🛑 Вимикається...', reboot: '🔄 Перезавантажується...', sleep: '🌙 Екрани вимикаються...' };
+  const r = await fetch(`${API}/pc/power`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action})
+  });
+  if (r.ok) { toast(labels[action]); tg?.HapticFeedback?.notificationOccurred('warning'); }
+  else toast('❌ Помилка', '#3a1a1a');
+}
+
+// ── TOOLS ─────────────────────────────────────────────────────────────────
+async function linuxAction(action) {
+  if (action === 'trash' && !confirm("Дійсно очистити кошик?")) return;
+  const r = await fetch(`${API}/pc/linux/${action}`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({})
+  });
+  if (r.ok) toast('✅ Виконано!');
+  else toast('❌ Помилка', '#3a1a1a');
+  tg?.HapticFeedback?.impactOccurred('light');
+}
+
+async function mediaAction(action) {
+  await fetch(`${API}/pc/media`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action})
+  });
+  tg?.HapticFeedback?.impactOccurred('light');
+}
+
+async function openUrl() {
+  let url = document.getElementById('open-url').value.trim();
+  if (!url) return;
+  if (!url.startsWith('http')) url = 'https://' + url;
+  const r = await fetch(`${API}/pc/open_url`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({url})
+  });
+  document.getElementById('open-url').value = '';
+  if (r.ok) toast('🌐 Відкрито в браузері!');
+  else toast('❌ Помилка', '#3a1a1a');
+}
+
+async function sendClipboard() {
+  const text = document.getElementById('clip-text').value.trim();
+  if (!text) return;
+  const r = await fetch(`${API}/pc/clipboard`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({text})
+  });
+  document.getElementById('clip-text').value = '';
+  if (r.ok) toast('📋 Скопійовано у буфер');
+  else toast('❌ Помилка (чи xclip встановлено?)');
+}
+
+async function sendNotify() {
+  const title = document.getElementById('notif-title').value.trim() || 'PC Remote';
+  const body  = document.getElementById('notif-body').value.trim();
+  if (!body) return;
+  await fetch(`${API}/pc/notify`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({title, body})
+  });
+  document.getElementById('notif-title').value = '';
+  document.getElementById('notif-body').value = '';
+  toast('🔔 Сповіщення надіслано!');
+}
+
+// ── ENTER KEY HELPERS ─────────────────────────────────────────────────────
+document.getElementById('open-url').addEventListener('keydown',  e => { if(e.key==='Enter') openUrl(); });
+document.getElementById('clip-text').addEventListener('keydown', e => { if(e.key==='Enter') sendClipboard(); });
+document.getElementById('notif-body').addEventListener('keydown',e => { if(e.key==='Enter') sendNotify(); });
+
+// ── AUTO REFRESH TOGGLE ───────────────────────────────────────────────────
+let autoRefreshEnabled = true;
+let refreshIntervals = [];
+
+function toggleAutoRefresh() {
+  autoRefreshEnabled = !autoRefreshEnabled;
+  if (autoRefreshEnabled) {
+    startAutoRefresh();
+    toast('✅ Авто-оновлення увімкнено');
+  } else {
+    stopAutoRefresh();
+    toast('⏸️ Авто-оновлення вимкнено');
+  }
+}
+
+function startAutoRefresh() {
+  refreshIntervals.push(setInterval(updateStats, 3000));
+  refreshIntervals.push(setInterval(loadUptime, 30000));
+  refreshIntervals.push(setInterval(loadNetwork, 10000));
+}
+
+function stopAutoRefresh() {
+  refreshIntervals.forEach(id => clearInterval(id));
+  refreshIntervals = [];
+}
+
+// ── ENHANCED ERROR HANDLING ───────────────────────────────────────────────
+window.addEventListener('error', (e) => {
+  console.error('Global error:', e.error);
+  toast('❌ Помилка додатку');
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Unhandled promise rejection:', e.reason);
+  toast('❌ Помилка з\'єднання');
+});
+
+// ── CONNECTION STATUS ─────────────────────────────────────────────────────
+let connectionLost = false;
+
+async function checkConnection() {
+  try {
+    const r = await fetch(`${API}/health`, { method: 'GET', signal: AbortSignal.timeout(5000) });
+    if (r.ok) {
+      if (connectionLost) {
+        connectionLost = false;
+        toast('✅ З\'єднання відновлено');
+        refreshAll();
+      }
+    } else {
+      throw new Error('Health check failed');
+    }
+  } catch (e) {
+    if (!connectionLost) {
+      connectionLost = true;
+      toast('⚠️ Втрачено з\'єднання з сервером', false);
+    }
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+function refreshAll() {
+  updateStats();
+  loadUptime();
+  loadNetwork();
+  loadProcesses();
+  loadCharts();
+}
+
+refreshAll();
+startAutoRefresh();
+setInterval(checkConnection, 15000);
+setInterval(loadCharts, 60000); // Оновлюємо графіки кожну хвилину
+</script>
+</body>
+</html>

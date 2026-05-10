@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🖥️ Віддалене Керування ПК v2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .stream-container {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        #screen {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            display: block;
+            max-height: 60vh;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .stream-overlay {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.live {
+            background: #00ff00;
+        }
+
+        .status-dot.offline {
+            background: #ff0000;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .control-panel h3 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-full {
+            grid-column: 1 / -1;
+        }
+
+        .btn-danger {
+            background: rgba(255, 59, 48, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 59, 48, 0.5);
+        }
+
+        .btn-success {
+            background: rgba(52, 199, 89, 0.3);
+        }
+
+        .btn-success:hover {
+            background: rgba(52, 199, 89, 0.5);
+        }
+
+        .touchpad {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            height: 200px;
+            margin-bottom: 10px;
+            cursor: crosshair;
+            position: relative;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .touchpad::before {
+            content: '👆 Тачпад';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.3;
+            font-size: 1.2em;
+            pointer-events: none;
+        }
+
+        .keyboard-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .keyboard-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .quick-keys {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .quick-keys .btn {
+            padding: 10px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ Віддалене Керування ПК</h1>
+            <p>Трансляція екрану та повне керування (v2 - Screenshot mode)</p>
+        </div>
+
+        <div class="stream-container">
+            <div class="stream-overlay">
+                <span class="status-dot live" id="statusDot"></span>
+                <span id="statusText">🔴 LIVE</span>
+            </div>
+            <img id="screen" src="" alt="Трансляція екрану">
+        </div>
+
+        <div class="controls">
+            <!-- Миша та Тачпад -->
+            <div class="control-panel">
+                <h3>🖱️ Миша</h3>
+                <div class="touchpad" id="touchpad"></div>
+                <div class="btn-grid">
+                    <button class="btn" onclick="mouseClick(1)">🖱️ Лівий</button>
+                    <button class="btn" onclick="mouseClick(3)">🖱️ Правий</button>
+                    <button class="btn" onclick="mouseScroll('up')">⬆️ Вгору</button>
+                    <button class="btn" onclick="mouseScroll('down')">⬇️ Вниз</button>
+                </div>
+            </div>
+
+            <!-- Клавіатура -->
+            <div class="control-panel">
+                <h3>⌨️ Клавіатура</h3>
+                <input type="text" class="keyboard-input" id="keyboardInput" placeholder="Введіть текст...">
+                <button class="btn btn-full btn-success" onclick="sendText()">📤 Відправити</button>
+                <div class="quick-keys">
+                    <button class="btn" onclick="sendKey('Return')">↵ Enter</button>
+                    <button class="btn" onclick="sendKey('Escape')">⎋ Esc</button>
+                    <button class="btn" onclick="sendKey('BackSpace')">⌫ Back</button>
+                    <button class="btn" onclick="sendKey('ctrl+c')">📋 Copy</button>
+                    <button class="btn" onclick="sendKey('ctrl+v')">📄 Paste</button>
+                    <button class="btn" onclick="sendKey('alt+Tab')">🔄 Alt+Tab</button>
+                </div>
+            </div>
+
+            <!-- Медіа -->
+            <div class="control-panel">
+                <h3>🎵 Медіа</h3>
+                <div class="btn-grid">
+                    <button class="btn" onclick="mediaControl('previous')">⏮️ Назад</button>
+                    <button class="btn" onclick="mediaControl('play-pause')">⏯️ Play</button>
+                    <button class="btn" onclick="mediaControl('next')">⏭️ Вперед</button>
+                    <button class="btn" onclick="volumeControl('up')">🔊 +</button>
+                    <button class="btn" onclick="volumeControl('down')">🔉 -</button>
+                    <button class="btn" onclick="volumeControl('mute')">🔇 Mute</button>
+                </div>
+            </div>
+
+            <!-- Система -->
+            <div class="control-panel">
+                <h3>⚙️ Система</h3>
+                <div class="btn-grid">
+                    <button class="btn btn-success" onclick="scenario('work')">🚀 Робота</button>
+                    <button class="btn" onclick="scenario('sleep')">🌙 Сон</button>
+                    <button class="btn" onclick="lockPC()">🔒 Блок</button>
+                    <button class="btn" onclick="openTerminal()">💻 Термінал</button>
+                    <button class="btn btn-danger" onclick="powerAction('shutdown')">🛑 Вимкнути</button>
+                    <button class="btn btn-danger" onclick="powerAction('reboot')">🔄 Перезавантажити</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin + '/api/pc';
+        let lastTouch = { x: 0, y: 0 };
+        let refreshInterval;
+
+        // Оновлення скріншоту
+        function updateScreenshot() {
+            const screen = document.getElementById('screen');
+            const timestamp = new Date().getTime();
+            screen.src = `${API_BASE}/screenshot_stream?t=${timestamp}`;
+        }
+
+        // Запуск автооновлення
+        function startScreenRefresh() {
+            updateScreenshot();
+            refreshInterval = setInterval(updateScreenshot, 500); // Оновлення кожні 500мс
+        }
+
+        // Тачпад
+        const touchpad = document.getElementById('touchpad');
+        let isDragging = false;
+
+        touchpad.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastTouch = { x: e.offsetX, y: e.offsetY };
+        });
+
+        touchpad.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const dx = (e.offsetX - lastTouch.x) * 2;
+                const dy = (e.offsetY - lastTouch.y) * 2;
+                lastTouch = { x: e.offsetX, y: e.offsetY };
+
+                fetch(`${API_BASE}/mouse`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'move_relative', dx, dy })
+                });
+            }
+        });
+
+        touchpad.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        touchpad.addEventListener('mouseleave', () => {
+            isDragging = false;
+        });
+
+        // Touch events для мобільних
+        touchpad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = touchpad.getBoundingClientRect();
+            lastTouch = {
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
+            };
+        });
+
+        touchpad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = touchpad.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+
+            const dx = (x - lastTouch.x) * 2;
+            const dy = (y - lastTouch.y) * 2;
+            lastTouch = { x, y };
+
+            fetch(`${API_BASE}/mouse`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'move_relative', dx, dy })
+            });
+        });
+
+        // Клік миші
+        function mouseClick(button) {
+            fetch(`${API_BASE}/mouse`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'click', button })
+            });
+        }
+
+        // Скрол
+        function mouseScroll(direction) {
+            fetch(`${API_BASE}/mouse`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'scroll', direction, amount: 3 })
+            });
+        }
+
+        // Відправка тексту
+        function sendText() {
+            const input = document.getElementById('keyboardInput');
+            const text = input.value;
+            if (text) {
+                fetch(`${API_BASE}/keyboard`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'type', text })
+                }).then(() => {
+                    input.value = '';
+                });
+            }
+        }
+
+        // Натискання клавіші
+        function sendKey(key) {
+            fetch(`${API_BASE}/keyboard`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'key', key })
+            });
+        }
+
+        // Enter в полі вводу
+        document.getElementById('keyboardInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendText();
+            }
+        });
+
+        // Медіа контроль
+        function mediaControl(action) {
+            fetch(`${API_BASE}/media`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+            });
+        }
+
+        // Гучність
+        function volumeControl(action) {
+            if (action === 'mute') {
+                fetch(`${API_BASE}/mute`, { method: 'POST' });
+            } else {
+                fetch(`${API_BASE}/volume`, {
+                    method: 'GET'
+                }).then(r => r.json()).then(data => {
+                    const newVol = action === 'up' ?
+                        Math.min(100, data.volume + 5) :
+                        Math.max(0, data.volume - 5);
+
+                    fetch(`${API_BASE}/volume`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ volume: newVol })
+                    });
+                });
+            }
+        }
+
+        // Сценарії
+        function scenario(mode) {
+            fetch(`${API_BASE}/scenario`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode })
+            });
+        }
+
+        // Блокування
+        function lockPC() {
+            if (confirm('Заблокувати ПК?')) {
+                fetch(`${API_BASE}/lock`, { method: 'POST' });
+            }
+        }
+
+        // Термінал
+        function openTerminal() {
+            fetch(`${API_BASE}/linux/terminal`, { method: 'POST' });
+        }
+
+        // Живлення
+        function powerAction(action) {
+            const messages = {
+                'shutdown': 'Вимкнути ПК?',
+                'reboot': 'Перезавантажити ПК?'
+            };
+
+            if (confirm(messages[action])) {
+                fetch(`${API_BASE}/power`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action })
+                });
+            }
+        }
+
+        // Ініціалізація
+        startScreenRefresh();
+    </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+[Unit]
+Description=Telegram Bots Auto-Start Manager (run_all.py)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/mnems1s/Documents/bot
+# Якщо використовуєш віртуальне середовище, краще вказувати шлях до нього
+ExecStart=/home/mnems1s/Documents/bot/venv/bin/python /home/mnems1s/Documents/bot/run_all.py
+Restart=always
+RestartSec=10
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=default.target

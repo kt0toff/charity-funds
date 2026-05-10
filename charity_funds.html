@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Довідник благодійних фондів</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Ліва панель - список ресурсів */
+        .sidebar {
+            min-width: 280px;
+            max-width: 500px;
+            width: auto;
+            background: white;
+            border-right: 2px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            resize: horizontal;
+            overflow: auto;
+        }
+
+        .sidebar-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .add-resource-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .add-resource-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .filter-section {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .filter-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.95em;
+            background: white;
+            cursor: pointer;
+            transition: border 0.3s ease;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .resources-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .resource-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .resource-item.dragging {
+            opacity: 0.5;
+            cursor: move;
+        }
+
+        .resource-item.drag-over {
+            border-color: #667eea;
+            background: #e9ecef;
+        }
+
+        .drag-handle {
+            cursor: move;
+            color: #ccc;
+            margin-right: 8px;
+            font-size: 0.9em;
+            user-select: none;
+            flex-shrink: 0;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+
+        .drag-handle:hover {
+            opacity: 1;
+            color: #999;
+        }
+
+        .resource-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .resource-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .resource-info {
+            flex: 1;
+            min-width: 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .resource-name {
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .resource-desc {
+            font-size: 0.85em;
+            opacity: 0.8;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .resource-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+            transition: transform 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            transform: scale(1.2);
+        }
+
+        /* Права панель - сітка фондів */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-header {
+            background: white;
+            padding: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-title {
+            font-size: 2em;
+            color: #667eea;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .funds-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            align-content: start;
+        }
+
+        .fund-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .fund-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .fund-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .fund-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #667eea;
+            flex: 1;
+        }
+
+        .fund-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .fund-contact {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .fund-conditions {
+            color: #333;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .empty-state-text {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        /* Модальні вікна */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            font-size: 1.8em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 200px;
+            }
+
+            .resources-list {
+                display: flex;
+                overflow-x: auto;
+                overflow-y: hidden;
+            }
+
+            .resource-item {
+                min-width: 200px;
+            }
+
+            .funds-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Ліва панель - список ресурсів -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>🤝 Ресурси</h1>
+                <button class="add-resource-btn" onclick="openAddResourceModal()">➕ Додати ресурс</button>
+            </div>
+            <div class="filter-section">
+                <div class="filter-label">Сортування:</div>
+                <select class="filter-select" id="sortSelect" onchange="applySorting()">
+                    <option value="custom">Своє налаштування</option>
+                    <option value="az">А → Я</option>
+                    <option value="za">Я → А</option>
+                    <option value="newest">Від новіших</option>
+                    <option value="oldest">Від старіших</option>
+                </select>
+            </div>
+            <div class="resources-list" id="resourcesList"></div>
+        </div>
+
+        <!-- Права панель - сітка фондів -->
+        <div class="main-content">
+            <div class="content-header">
+                <h2 class="content-title" id="contentTitle">Оберіть ресурс</h2>
+                <div class="header-actions">
+                    <button class="btn btn-success" id="addFundBtn" onclick="openAddFundModal()" style="display: none;">➕ Додати фонд</button>
+                    <button class="btn" onclick="exportData()">💾 Експорт</button>
+                </div>
+            </div>
+            <div class="funds-grid" id="fundsGrid">
+                <div class="empty-state">
+                    <div class="empty-state-icon">👈</div>
+                    <div class="empty-state-text">Оберіть ресурс зі списку</div>
+                    <p>Натисніть на ресурс ліворуч, щоб побачити фонди</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальне вікно для ресурсу -->
+    <div id="resourceModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-header" id="resourceModalTitle">Додати ресурс</h2>
+            <form id="resourceForm">
+                <div class="form-group">
+                    <label>Назва ресурсу:</label>
+                    <input type="text" id="resourceName" required placeholder="Наприклад: Продукти харчування">
+                </div>
+                <div class="form-group">
+                    <label>Опис:</label>
+                    <input type="text" id="resourceDescription" required placeholder="Наприклад: Продуктові набори, гарячі обіди">
+                </div>
+                <div class="form-group">
+                    <label>Іконка (emoji):</label>
+                    <input type="text" id="resourceIcon" maxlength="2" placeholder="🍲">
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-success">Зберегти</button>
+                    <button type="button" class="btn btn-cancel" onclick="closeResourceModal()">Скасувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальне вікно для фонду -->
+    <div id="fundModal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-header" id="fundModalTitle">Додати фонд</h2>
+            <form id="fundForm">
+                <div class="form-group">
+                    <label>Назва фонду:</label>
+                    <input type="text" id="fundName" required placeholder="Наприклад: Червоний Хрест України">
+                </div>
+                <div class="form-group">
+                    <label>Контакти:</label>
+                    <input type="text" id="fundContact" required placeholder="тел: 0-800-000-000, website.com">
+                </div>
+                <div class="form-group">
+                    <label>Умови надання:</label>
+                    <textarea id="fundConditions" required placeholder="Опишіть умови отримання допомоги, необхідні документи тощо"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-success">Зберегти</button>
+                    <button type="button" class="btn btn-cancel" onclick="closeFundModal()">Скасувати</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Автоматичне визначення API URL (локальний або публічний)
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:5001/api'
+            : `${window.location.protocol}//${window.location.host}/api`;
+
+        console.log('API URL:', API_URL);
+        let currentResourceId = null;
+        let editingResourceId = null;
+        let editingFundId = null;
+        let allResources = [];
+        let currentSort = 'custom';
+
+        async function fetchResources() {
+            const response = await fetch(`${API_URL}/resources`);
+            return await response.json();
+        }
+
+        async function fetchFunds(resourceId) {
+            const response = await fetch(`${API_URL}/funds/${resourceId}`);
+            return await response.json();
+        }
+
+        async function renderResources() {
+            const list = document.getElementById('resourcesList');
+            list.innerHTML = '<p style="text-align: center; padding: 20px; color: #999;">Завантаження...</p>';
+
+            try {
+                allResources = await fetchResources();
+
+                // Додаємо timestamp для сортування (якщо немає)
+                allResources = allResources.map((res, index) => ({
+                    ...res,
+                    order: res.order !== undefined ? res.order : index,
+                    created_at: res.created_at || Date.now() - (allResources.length - index) * 1000
+                }));
+
+                // Завантажуємо збережений порядок
+                loadCustomOrder();
+
+                applySorting();
+            } catch (error) {
+                list.innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Помилка завантаження</p>';
+                console.error('Error:', error);
+            }
+        }
+
+        function applySorting() {
+            currentSort = document.getElementById('sortSelect').value;
+            let sortedResources = [...allResources];
+
+            switch(currentSort) {
+                case 'az':
+                    sortedResources.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+                    break;
+                case 'za':
+                    sortedResources.sort((a, b) => b.name.localeCompare(a.name, 'uk'));
+                    break;
+                case 'newest':
+                    sortedResources.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+                    break;
+                case 'oldest':
+                    sortedResources.sort((a, b) => (a.created_at || 0) - (b.created_at || 0));
+                    break;
+                case 'custom':
+                default:
+                    sortedResources.sort((a, b) => (a.order || 0) - (b.order || 0));
+                    break;
+            }
+
+            displayResources(sortedResources);
+        }
+
+        function displayResources(resources) {
+            const list = document.getElementById('resourcesList');
+            list.innerHTML = '';
+
+            resources.forEach((resource, index) => {
+                const item = document.createElement('div');
+                item.className = 'resource-item';
+                item.draggable = currentSort === 'custom';
+                item.dataset.resourceId = resource.id;
+                item.dataset.index = index;
+
+                if (currentResourceId === resource.id) {
+                    item.classList.add('active');
+                }
+
+                // Видалено drag handle
+                item.innerHTML = `
+                    <div class="resource-info">
+                        <div class="resource-name">${resource.icon} ${resource.name}</div>
+                        <div class="resource-desc">${resource.description}</div>
+                    </div>
+                    <div class="resource-actions">
+                        <button class="icon-btn" onclick="event.stopPropagation(); openEditResourceModal('${resource.id}')" title="Редагувати">✏️</button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); deleteResource('${resource.id}')" title="Видалити">🗑️</button>
+                    </div>
+                `;
+
+                // Drag and drop events (тільки для custom режиму)
+                if (currentSort === 'custom') {
+                    item.style.cursor = 'move';
+                    item.addEventListener('dragstart', handleDragStart);
+                    item.addEventListener('dragover', handleDragOver);
+                    item.addEventListener('drop', handleDrop);
+                    item.addEventListener('dragend', handleDragEnd);
+                } else {
+                    item.style.cursor = 'pointer';
+                }
+
+                item.onclick = (e) => {
+                    showFunds(resource);
+                };
+
+                list.appendChild(item);
+            });
+        }
+
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+
+            const target = e.target.closest('.resource-item');
+            if (target && target !== draggedElement) {
+                target.classList.add('drag-over');
+            }
+
+            return false;
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            const target = e.target.closest('.resource-item');
+            if (draggedElement !== target && target) {
+                const draggedIndex = parseInt(draggedElement.dataset.index);
+                const targetIndex = parseInt(target.dataset.index);
+
+                // Переставляємо елементи в масиві
+                const temp = allResources[draggedIndex];
+                allResources.splice(draggedIndex, 1);
+                allResources.splice(targetIndex, 0, temp);
+
+                // Оновлюємо order для всіх елементів
+                allResources.forEach((res, idx) => {
+                    res.order = idx;
+                });
+
+                // Зберігаємо новий порядок
+                saveCustomOrder();
+
+                displayResources(allResources);
+            }
+
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.resource-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+        }
+
+        async function saveCustomOrder() {
+            // Зберігаємо порядок в localStorage
+            const orderMap = {};
+            allResources.forEach((res, idx) => {
+                orderMap[res.id] = idx;
+            });
+            localStorage.setItem('resourceOrder', JSON.stringify(orderMap));
+        }
+
+        function loadCustomOrder() {
+            const saved = localStorage.getItem('resourceOrder');
+            if (saved) {
+                try {
+                    const orderMap = JSON.parse(saved);
+                    allResources.forEach(res => {
+                        if (orderMap[res.id] !== undefined) {
+                            res.order = orderMap[res.id];
+                        }
+                    });
+                } catch (e) {
+                    console.error('Failed to load custom order:', e);
+                }
+            }
+        }
+
+        async function showFunds(resource) {
+            currentResourceId = resource.id;
+            document.getElementById('contentTitle').textContent = `${resource.icon} ${resource.name}`;
+            document.getElementById('addFundBtn').style.display = 'block';
+
+            const grid = document.getElementById('fundsGrid');
+            grid.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">Завантаження...</div>';
+
+            await renderResources();
+
+            try {
+                const funds = await fetchFunds(resource.id);
+                grid.innerHTML = '';
+
+                if (funds.length === 0) {
+                    grid.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <div class="empty-state-text">Немає фондів</div>
+                            <p>Натисніть "➕ Додати фонд", щоб додати перший фонд</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                funds.forEach(fund => {
+                    const card = document.createElement('div');
+                    card.className = 'fund-card';
+                    card.innerHTML = `
+                        <div class="fund-header">
+                            <div class="fund-name">${fund.name}</div>
+                            <div class="fund-actions">
+                                <button class="icon-btn" onclick="openEditFundModal(${fund.id})" title="Редагувати">✏️</button>
+                                <button class="icon-btn" onclick="deleteFund(${fund.id})" title="Видалити">🗑️</button>
+                            </div>
+                        </div>
+                        <div class="fund-contact">📞 ${fund.contact}</div>
+                        <div class="fund-conditions">${fund.conditions}</div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (error) {
+                grid.innerHTML = '<div style="text-align: center; padding: 40px; color: red;">Помилка завантаження фондів</div>';
+                console.error('Error:', error);
+            }
+        }
+
+        // Модальні вікна для ресурсів
+        function openAddResourceModal() {
+            editingResourceId = null;
+            document.getElementById('resourceModalTitle').textContent = 'Додати ресурс';
+            document.getElementById('resourceName').value = '';
+            document.getElementById('resourceDescription').value = '';
+            document.getElementById('resourceIcon').value = '';
+            document.getElementById('resourceModal').classList.add('active');
+        }
+
+        async function openEditResourceModal(resourceId) {
+            editingResourceId = resourceId;
+            const resources = await fetchResources();
+            const resource = resources.find(r => r.id === resourceId);
+            document.getElementById('resourceModalTitle').textContent = 'Редагувати ресурс';
+            document.getElementById('resourceName').value = resource.name;
+            document.getElementById('resourceDescription').value = resource.description;
+            document.getElementById('resourceIcon').value = resource.icon;
+            document.getElementById('resourceModal').classList.add('active');
+        }
+
+        function closeResourceModal() {
+            document.getElementById('resourceModal').classList.remove('active');
+        }
+
+        document.getElementById('resourceForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('resourceName').value;
+            const description = document.getElementById('resourceDescription').value;
+            const icon = document.getElementById('resourceIcon').value || '📦';
+
+            try {
+                if (editingResourceId) {
+                    await fetch(`${API_URL}/resources/${editingResourceId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, description, icon })
+                    });
+                } else {
+                    const id = name.toLowerCase().replace(/\s+/g, '_').replace(/[^\wа-яА-ЯіІїЇєЄ]/g, '');
+                    await fetch(`${API_URL}/resources`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id, name, description, icon })
+                    });
+                }
+
+                await renderResources();
+                closeResourceModal();
+            } catch (error) {
+                alert('Помилка збереження ресурсу');
+                console.error('Error:', error);
+            }
+        };
+
+        async function deleteResource(resourceId) {
+            if (confirm('Ви впевнені, що хочете видалити цей ресурс? Всі фонди цього ресурсу також будуть видалені.')) {
+                try {
+                    await fetch(`${API_URL}/resources/${resourceId}`, { method: 'DELETE' });
+                    if (currentResourceId === resourceId) {
+                        currentResourceId = null;
+                        document.getElementById('contentTitle').textContent = 'Оберіть ресурс';
+                        document.getElementById('addFundBtn').style.display = 'none';
+                        document.getElementById('fundsGrid').innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">👈</div>
+                                <div class="empty-state-text">Оберіть ресурс зі списку</div>
+                            </div>
+                        `;
+                    }
+                    await renderResources();
+                } catch (error) {
+                    alert('Помилка видалення ресурсу');
+                    console.error('Error:', error);
+                }
+            }
+        }
+
+        // Модальні вікна для фондів
+        function openAddFundModal() {
+            if (!currentResourceId) {
+                alert('Спочатку оберіть ресурс');
+                return;
+            }
+            editingFundId = null;
+            document.getElementById('fundModalTitle').textContent = 'Додати фонд';
+            document.getElementById('fundName').value = '';
+            document.getElementById('fundContact').value = '';
+            document.getElementById('fundConditions').value = '';
+            document.getElementById('fundModal').classList.add('active');
+        }
+
+        async function openEditFundModal(fundId) {
+            editingFundId = fundId;
+            const funds = await fetchFunds(currentResourceId);
+            const fund = funds.find(f => f.id === fundId);
+            document.getElementById('fundModalTitle').textContent = 'Редагувати фонд';
+            document.getElementById('fundName').value = fund.name;
+            document.getElementById('fundContact').value = fund.contact;
+            document.getElementById('fundConditions').value = fund.conditions;
+            document.getElementById('fundModal').classList.add('active');
+        }
+
+        function closeFundModal() {
+            document.getElementById('fundModal').classList.remove('active');
+        }
+
+        document.getElementById('fundForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('fundName').value;
+            const contact = document.getElementById('fundContact').value;
+            const conditions = document.getElementById('fundConditions').value;
+
+            try {
+                if (editingFundId) {
+                    await fetch(`${API_URL}/funds/${editingFundId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, contact, conditions })
+                    });
+                } else {
+                    await fetch(`${API_URL}/funds`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ resource_id: currentResourceId, name, contact, conditions })
+                    });
+                }
+
+                const resources = await fetchResources();
+                const resource = resources.find(r => r.id === currentResourceId);
+                await showFunds(resource);
+                closeFundModal();
+            } catch (error) {
+                alert('Помилка збереження фонду');
+                console.error('Error:', error);
+            }
+        };
+
+        async function deleteFund(fundId) {
+            if (confirm('Ви впевнені, що хочете видалити цей фонд?')) {
+                try {
+                    await fetch(`${API_URL}/funds/${fundId}`, { method: 'DELETE' });
+                    const resources = await fetchResources();
+                    const resource = resources.find(r => r.id === currentResourceId);
+                    await showFunds(resource);
+                } catch (error) {
+                    alert('Помилка видалення фонду');
+                    console.error('Error:', error);
+                }
+            }
+        }
+
+        async function exportData() {
+            try {
+                const response = await fetch(`${API_URL}/export`);
+                const data = await response.json();
+                const dataStr = JSON.stringify(data, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `charity_backup_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('Помилка експорту даних');
+                console.error('Error:', error);
+            }
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        };
+
+        renderResources();
+    </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+[Unit]
+Description=Telegram PC Remote Control Bot (User Service)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/mnems1s/Documents/pc_remote_control/remote_bot.py
+Restart=always
+RestartSec=10
+WorkingDirectory=/home/mnems1s/Documents/pc_remote_control
+Environment="PYTHONUNBUFFERED=1"
+Environment="DISPLAY=:0"
+Environment="WAYLAND_DISPLAY=wayland-0"
+Environment="XDG_RUNTIME_DIR=/run/user/1000"
+Environment="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus"
+
+[Install]
+WantedBy=default.target

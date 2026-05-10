@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neural Architect | OS v5.1 Platinum</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+
+        :root {
+            /* Era Themes */
+            --era1-glow: rgba(88, 166, 255, 0.4); --era1-accent: #58a6ff;
+            --era2-glow: rgba(63, 185, 80, 0.4); --era2-accent: #3fb950;
+            --era3-glow: rgba(188, 140, 255, 0.4); --era3-accent: #bc8cff;
+
+            --bg: #010409; --panel: #0d1117; --card: #161b22; --border: #30363d;
+            --text: #c9d1d9; --muted: #8b949e; --accent: var(--era1-accent); --glow: var(--era1-glow);
+            --success: #238636; --warning: #d29922; --danger: #da3633; --quantum: #00ffd0;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        /* --- Mission Control (Clarity) --- */
+        #mission-bar {
+            background: linear-gradient(90deg, #000, var(--panel));
+            border-bottom: 1px solid var(--accent);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.85em;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--glow);
+            z-index: 1000;
+        }
+        #mission-text { font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* --- Global Header --- */
+        header {
+            background-color: var(--panel);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .top-row { display: flex; justify-content: space-between; align-items: center; }
+        .brand { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 1.1em; color: var(--accent); }
+        
+        .res-row { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .res-row::-webkit-scrollbar { display: none; }
+        .res-item { display: flex; flex-direction: column; min-width: 80px; }
+        .res-item label { font-size: 0.6em; color: var(--muted); text-transform: uppercase; font-weight: 800; margin-bottom: 2px; }
+        .res-item span { font-size: 1em; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--text); }
+        .res-item.highlight span { color: var(--accent); text-shadow: 0 0 8px var(--glow); }
+
+        /* --- Quantum Meter (Visual Feedback) --- */
+        #quantum-ui { padding: 0 20px 10px; background: var(--panel); }
+        #quantum-container {
+            height: 35px;
+            background: #000;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+        #quantum-pulse {
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--quantum), transparent);
+            width: 15%;
+            position: absolute;
+            left: 0;
+            box-shadow: 0 0 20px var(--quantum);
+            z-index: 2;
+        }
+        .quantum-target {
+            position: absolute;
+            width: 18%;
+            height: 100%;
+            background: rgba(0, 255, 208, 0.08);
+            left: 41%;
+            border-left: 2px solid var(--quantum);
+            border-right: 2px solid var(--quantum);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.6em; color: var(--quantum); font-weight: 900;
+            z-index: 1;
+        }
+
+        /* --- Tabs & Content --- */
+        #wrapper { display: flex; flex-grow: 1; overflow: hidden; }
+        #sidebar { width: 240px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        #content { flex-grow: 1; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
+
+        .nav-item {
+            padding: 15px 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--muted);
+            font-size: 0.9em;
+            font-weight: 600;
+            border-left: 4px solid transparent;
+            transition: 0.3s;
+        }
+        .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.02); }
+        .nav-item.active { color: var(--accent); background: rgba(88, 166, 255, 0.05); border-left-color: var(--accent); }
+
+        /* --- Stylish Components --- */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        h2 { font-size: 1.3em; margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px; font-weight: 800; }
+        
+        button {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 800;
+            width: 100%;
+            cursor: pointer;
+            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 0px rgba(0,0,0,0.3);
+        }
+        button:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 6px 0px rgba(0,0,0,0.3); }
+        button:active:not(:disabled) { transform: translateY(0px); box-shadow: 0 2px 0px rgba(0,0,0,0.3); }
+        button:disabled { background: #21262d; color: #484f58; box-shadow: none; opacity: 0.6; }
+        button.secondary { background: #30363d; border: 1px solid var(--border); }
+
+        /* --- Mastery & Progress --- */
+        .mastery-box { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-top: 15px; }
+        .p-bar { height: 10px; background: #000; border-radius: 5px; margin: 8px 0; overflow: hidden; position: relative; border: 1px solid #1f242b; }
+        .p-fill { 
+            height: 100%; background: linear-gradient(90deg, var(--accent), #fff); 
+            width: 0%; transition: width 0.5s ease-out; box-shadow: 0 0 10px var(--glow);
+        }
+        .p-pool { background: linear-gradient(90deg, var(--warning), #fff); }
+
+        /* --- Floating UI --- */
+        @keyframes floatAnim { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-50px); opacity: 0; } }
+        .float-text { position: absolute; pointer-events: none; animation: floatAnim 1s forwards; font-weight: 900; font-family: 'JetBrains Mono'; z-index: 1000; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
+
+        #log { 
+            font-family: 'JetBrains Mono', monospace; font-size: 0.7em; height: 100px; 
+            overflow-y: auto; padding: 15px; border-top: 1px solid var(--border); 
+            color: var(--muted); background: #05070a; 
+        }
+        .log-entry { margin-bottom: 5px; border-left: 2px solid var(--border); padding-left: 10px; }
+        .log-entry.new { color: var(--accent); border-left-color: var(--accent); }
+
+        @media (max-width: 767px) {
+            #sidebar { display: none; }
+            #mobile-nav { height: 70px; background: var(--panel); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; flex-shrink: 0; }
+            .m-nav-item { display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--muted); font-size: 0.7em; font-weight: 700; }
+            .m-nav-item.active { color: var(--accent); }
+            .m-nav-item i { font-size: 1.4em; }
+            .card { padding: 15px; }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="mission-bar">
+        <i class="fas fa-terminal"></i>
+        <span id="mission-text">Initializing Systems...</span>
+    </div>
+
+    <header>
+        <div class="top-row">
+            <span class="brand">NEURAL_ARCHITECT <span id="era-name" style="font-size: 0.7em; background: var(--accent); color:#000; padding: 2px 6px; border-radius: 4px; margin-left: 10px;">ERA_1</span></span>
+            <div id="sync-status" style="font-size: 0.6em; color: var(--muted); font-weight: 800;">[ CLOUD_SYNC_OK ]</div>
+        </div>
+        <div class="res-row" id="res-display">
+            <!-- Resources via JS -->
+        </div>
+    </header>
+
+    <div id="quantum-ui">
+        <div id="quantum-container" onclick="G.quantumClick(event)">
+            <div class="quantum-target">SYNC_ZONE</div>
+            <div id="quantum-pulse"></div>
+        </div>
+    </div>
+
+    <div id="wrapper">
+        <div id="sidebar">
+            <!-- Nav via JS -->
+        </div>
+
+        <div id="content">
+            <div id="view"></div>
+        </div>
+    </div>
+
+    <div id="log"></div>
+
+    <div id="mobile-nav">
+        <!-- Nav via JS -->
+    </div>
+
+    <script>
+        const G = {
+            state: {
+                era: 1, data: 0, insights: 0, credits: 0, ops: 0, trust: 0,
+                totalData: 0, lastSave: Date.now(),
+                price: 15, inventory: 0, marketing: 0, autoProcs: 0,
+                skills: {
+                    mining: { lvl: 1, exp: 0, next: 50, pool: 0, poolMax: 1000 },
+                    processing: { lvl: 1, exp: 0, next: 100, pool: 0, poolMax: 1000 },
+                    trading: { lvl: 1, exp: 0, next: 150, pool: 0, poolMax: 1000 }
+                },
+                infra: [
+                    { id: 'node', name: 'Compute Node', cost: 15, power: 1, count: 0, desc: 'Базовий процесор для збору даних.' },
+                    { id: 'rack', name: 'Server Rack', cost: 500, power: 20, count: 0, desc: 'Професійна серверна стійка.' }
+                ],
+                unlocked: { processing: false, market: false, infra: false }
+            },
+
+            ui: { activeTab: 'mining', qPulse: 0, qDir: 1, lastMission: "" },
+
+            async init() {
+                await this.serverLoad();
+                this.updateTheme();
+                this.renderNav();
+                this.loop();
+                this.log("Architect OS v5.1 Platinum Booted.", true);
+            },
+
+            loop() {
+                let lastTick = Date.now();
+                setInterval(() => {
+                    let now = Date.now();
+                    let dt = (now - lastTick) / 1000;
+                    lastTick = now;
+
+                    // Quantum
+                    this.ui.qPulse += 1.2 * this.ui.qDir;
+                    if (this.ui.qPulse >= 100 || this.ui.qPulse <= 0) this.ui.qDir *= -1;
+                    document.getElementById('quantum-pulse').style.left = this.ui.qPulse + '%';
+
+                    // Production
+                    let power = this.state.infra.reduce((sum, i) => sum + (i.count * i.power), 0);
+                    let mult = 1 + (this.state.trust * 0.1);
+                    this.state.data += power * mult * dt;
+                    this.state.totalData += power * mult * dt;
+
+                    // Sales
+                    if (this.state.inventory > 0) {
+                        let demand = (this.state.marketing + 1) * (20 / this.state.price) * 5;
+                        if (Math.random() < (demand / 100) * dt) {
+                            this.state.inventory--; this.state.credits += this.state.price;
+                            this.addExp('trading', 5);
+                        }
+                    }
+
+                    // Auto
+                    if (this.state.autoProcs > 0 && Math.random() < (this.state.autoProcs / 5) * dt) this.processData();
+
+                    this.checkUnlocks();
+                    this.updateUI();
+                    this.updateMission();
+
+                    if (now - this.state.lastSave > 15000) this.serverSave();
+                }, 50);
+            },
+
+            // --- ACTIONS ---
+            mine(e) {
+                let gain = 1 + (this.state.skills.mining.lvl * 0.2);
+                this.state.data += gain; this.state.totalData += gain;
+                this.addExp('mining', 2);
+                this.spawnFloat(e, `+${gain.toFixed(1)} DATA`);
+            },
+
+            quantumClick(e) {
+                if (this.ui.qPulse > 40 && this.ui.qPulse < 60) {
+                    let gain = Math.floor(10 + (this.state.totalData / 2000));
+                    this.state.ops += gain;
+                    this.spawnFloat(e, `CRITICAL SYNC: +${gain} OPS`, 'var(--quantum)');
+                    this.log(`Quantum optimization successful: +${gain} Ops`);
+                } else {
+                    this.spawnFloat(e, `ASYNC`, 'var(--danger)');
+                }
+            },
+
+            processData() {
+                if (this.state.data >= 10) {
+                    this.state.data -= 10; this.state.insights++; this.state.inventory++;
+                    this.addExp('processing', 15);
+                }
+            },
+
+            buyInfra(id) {
+                let i = this.state.infra.find(x => x.id === id);
+                if (this.state.credits >= i.cost) {
+                    this.state.credits -= i.cost; i.count++; i.cost = Math.floor(i.cost * 1.3);
+                    this.renderView();
+                    this.log(`Installed: ${i.name}`);
+                }
+            },
+
+            addExp(skill, amt) {
+                let s = this.state.skills[skill];
+                s.exp += amt; s.pool = Math.min(s.poolMax, s.pool + amt * 0.1);
+                if (s.exp >= s.next) {
+                    s.exp -= s.next; s.lvl++; s.next = Math.floor(s.next * 1.6);
+                    this.log(`Mastery Upgraded: ${skill.toUpperCase()} is now Level ${s.lvl}`, true);
+                }
+            },
+
+            // --- UI ---
+            updateTheme() {
+                const root = document.documentElement;
+                root.style.setProperty('--accent', `var(--era${this.state.era}-accent)`);
+                root.style.setProperty('--glow', `var(--era${this.state.era}-glow)`);
+                document.getElementById('era-name').innerText = `ERA_${this.state.era}`;
+            },
+
+            updateMission() {
+                let m = "";
+                const s = this.state;
+                if (!s.unlocked.processing) m = "Mission: Gather 10 Data to unlock Processing.";
+                else if (!s.unlocked.market) m = "Mission: Generate 5 Insights to unlock Marketplace.";
+                else if (s.credits < 1000) m = "Mission: Accumulate $1,000 to expand Infrastructure.";
+                else if (s.era === 1) m = "Mission: Reach $1,000,000 to achieve Planetary Scale.";
+                
+                if (this.ui.lastMission !== m) {
+                    document.getElementById('mission-text').innerText = m;
+                    this.ui.lastMission = m;
+                }
+            },
+
+            updateUI() {
+                const s = this.state;
+                const display = document.getElementById('res-display');
+                const f = (n) => Math.floor(n).toLocaleString();
+
+                display.innerHTML = `
+                    <div class="res-item highlight"><label>Data</label><span>${f(s.data)}</span></div>
+                    <div class="res-item highlight"><label>Credits</label><span>${f(s.credits)}$</span></div>
+                    ${s.unlocked.processing ? `<div class="res-item"><label>Insights</label><span>${f(s.insights)}</span></div>` : ''}
+                    <div class="res-item"><label>Ops</label><span>${f(s.ops)}</span></div>
+                `;
+
+                if (Math.random() < 0.05) this.renderView(); // Optimization
+            },
+
+            renderNav() {
+                const s = this.state;
+                const items = [
+                    { id: 'mining', icon: 'fa-microchip', label: 'Mining' },
+                    { id: 'processing', icon: 'fa-brain', label: 'Processing', lock: !s.unlocked.processing },
+                    { id: 'market', icon: 'fa-chart-line', label: 'Market', lock: !s.unlocked.market },
+                    { id: 'infra', icon: 'fa-server', label: 'Infrastructure', lock: !s.unlocked.infra }
+                ];
+
+                const html = items.map(i => `
+                    <div class="nav-item ${i.id === this.ui.activeTab ? 'active' : ''} ${i.lock ? 'hidden' : ''}" onclick="G.switchTab('${i.id}')">
+                        <i class="fas ${i.icon}"></i> <span>${i.label}</span>
+                    </div>
+                `).join('');
+
+                document.getElementById('sidebar').innerHTML = html;
+                document.getElementById('mobile-nav').innerHTML = html.replace(/nav-item/g, 'm-nav-item');
+                this.renderView();
+            },
+
+            renderView() {
+                const s = this.state;
+                const tab = this.ui.activeTab;
+                const view = document.getElementById('view');
+
+                if (tab === 'mining') {
+                    view.innerHTML = `
+                        <h2><i class="fas fa-microchip"></i> Data Acquisition</h2>
+                        <div class="card">
+                            <button onclick="G.mine(event)">EXTRACT DATA PACKETS</button>
+                            <div class="mastery-box">
+                                <div style="display:flex; justify-content:space-between; font-size:0.7em; font-weight:800;">
+                                    <span>MASTERY LEVEL ${s.skills.mining.lvl}</span>
+                                    <span>${(s.skills.mining.exp/s.skills.mining.next*100).toFixed(0)}%</span>
+                                </div>
+                                <div class="p-bar"><div class="p-fill" style="width:${s.skills.mining.exp/s.skills.mining.next*100}%"></div></div>
+                                <div style="margin-top:10px; display:flex; justify-content:space-between; font-size:0.6em; color:var(--warning); font-weight:800;">
+                                    <span>POOL BONUS (+${(s.skills.mining.pool/s.skills.mining.poolMax*50).toFixed(1)}% Speed)</span>
+                                    <span>${(s.skills.mining.pool/s.skills.mining.poolMax*100).toFixed(1)}%</span>
+                                </div>
+                                <div class="p-bar"><div class="p-fill p-pool" style="width:${s.skills.mining.pool/s.skills.mining.poolMax*100}%"></div></div>
+                            </div>
+                        </div>
+                    `;
+                } else if (tab === 'processing') {
+                    view.innerHTML = `
+                        <h2><i class="fas fa-brain"></i> Neural Synthesis</h2>
+                        <div class="card">
+                            <h3>Insight Generation</h3>
+                            <p style="font-size:0.8em; color:var(--muted);">Перетворіть накопичені дані на корисну інформацію.</p>
+                            <button onclick="G.processData()" ${s.data < 10 ? 'disabled' : ''}>GENERATE INSIGHT (10 DATA)</button>
+                        </div>
+                        <div class="card">
+                            <h3>Auto-Processing Units</h3>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                                <span>Active Units: <b>${s.autoProcs}</b></span>
+                                <span>Speed: <b>${(s.autoProcs/5).toFixed(1)}/s</b></span>
+                            </div>
+                            <button class="secondary" onclick="G.buyAutoProc()">INSTALL UNIT ($${(50+s.autoProcs*150).toLocaleString()})</button>
+                        </div>
+                    `;
+                } else if (tab === 'infra') {
+                    view.innerHTML = `<h2><i class="fas fa-server"></i> Hardware Grid</h2>` + s.infra.map(i => `
+                        <div class="card">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <strong style="font-size:1.1em;">${i.name}</strong>
+                                <span style="background:var(--accent); color:#000; padding:2px 8px; border-radius:4px; font-weight:900; font-size:0.8em;">x${i.count}</span>
+                            </div>
+                            <p style="font-size:0.8em; color:var(--muted); margin:10px 0;">${i.desc}</p>
+                            <div style="color:var(--success); font-weight:bold; font-size:0.8em; margin-bottom:10px;">Output: +${i.power} Data/s</div>
+                            <button class="secondary" onclick="G.buyInfra('${i.id}')" ${s.credits < i.cost ? 'disabled' : ''}>UPGRADE ($${i.cost.toLocaleString()})</button>
+                        </div>
+                    `).join('');
+                } else if (tab === 'market') {
+                    view.innerHTML = `
+                        <h2><i class="fas fa-chart-line"></i> Global Marketplace</h2>
+                        <div class="card" style="text-align:center;">
+                            <label style="font-size:0.7em; color:var(--muted); font-weight:800;">INSIGHT PRICE</label>
+                            <div class="price-display">$${s.price}</div>
+                            <div style="display:flex; gap:15px;">
+                                <button class="secondary" onclick="G.adjustPrice(-1)">LOWER</button>
+                                <button class="secondary" onclick="G.adjustPrice(1)">RAISE</button>
+                            </div>
+                            <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:0.8em; font-family:'JetBrains Mono';">
+                                <div style="background:#000; padding:10px; border-radius:8px;">Demand: <span style="color:var(--success)">${((s.marketing+1)*(20/s.price)*5).toFixed(1)}%</span></div>
+                                <div style="background:#000; padding:10px; border-radius:8px;">In Stock: <span style="color:var(--accent)">${s.inventory}</span></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+
+            // --- SYSTEM ---
+            checkUnlocks() {
+                const s = this.state;
+                let changed = false;
+                if (!s.unlocked.processing && s.totalData >= 10) { s.unlocked.processing = true; changed = true; }
+                if (!s.unlocked.market && s.insights >= 5) { s.unlocked.market = true; changed = true; }
+                if (!s.unlocked.infra && s.credits >= 15) { s.unlocked.infra = true; changed = true; }
+                if (changed) this.renderNav();
+            },
+
+            switchTab(id) { this.ui.activeTab = id; this.renderNav(); },
+
+            spawnFloat(e, text, color = 'var(--accent)') {
+                if (!e || !e.clientX) return;
+                const el = document.createElement('div');
+                el.className = 'float-text'; el.innerText = text; el.style.color = color;
+                el.style.left = e.clientX + 'px'; el.style.top = e.clientY + 'px';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+            },
+
+            log(msg, important = false) {
+                const log = document.getElementById('log');
+                log.innerHTML = `<div class="log-entry ${important ? 'new' : ''}">> ${msg}</div>` + log.innerHTML;
+                if (log.children.length > 25) log.lastChild.remove();
+            },
+
+            async serverSave() {
+                try {
+                    await fetch('/api/game/save', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ state: JSON.stringify(this.state) })
+                    });
+                    this.state.lastSave = Date.now();
+                    document.getElementById('sync-status').innerText = "[ CLOUD_SYNC_OK ]";
+                } catch (e) { document.getElementById('sync-status').innerText = "[ OFFLINE ]"; }
+            },
+
+            async serverLoad() {
+                try {
+                    const res = await fetch('/api/game/load');
+                    const data = await res.json();
+                    if (data) this.state = { ...this.state, ...JSON.parse(data) };
+                } catch (e) {}
+            },
+
+            adjustPrice(amt) { this.state.price = Math.max(1, this.state.price + amt); },
+            buyAutoProc() {
+                let cost = 50 + (this.state.autoProcs * 150);
+                if (this.state.credits >= cost) { this.state.credits -= cost; this.state.autoProcs++; this.renderView(); }
+            }
+        };
+
+        window.onload = () => G.init();
+    </script>
+</body>
+</html>
